@@ -248,7 +248,12 @@ def sync_measurement(session_id, measurement_data, photo_drive_info=None):
 
     try:
         session_doc = str(session_id)
-        measurement_id = str(measurement_data.get("id", measurement_data.get("timestamp", "")))
+        # Use timestamp as doc ID (always unique, human-readable)
+        # Fallback to id only if timestamp is missing
+        ts = measurement_data.get("timestamp") or str(measurement_data.get("id") or "")
+        measurement_id = ts.replace(":", "-").replace(".", "-")  # Firestore-safe ID
+        if not measurement_id:
+            measurement_id = datetime.now().isoformat().replace(":", "-").replace(".", "-")
 
         doc_ref = (_firestore_db
                    .collection("sesiones").document(session_doc)

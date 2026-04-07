@@ -135,7 +135,7 @@ def run_cycle(conn, session):
         try:
             drive_info = fb_sync.sync_full_cycle(
                 session=session,
-                measurement={"id": None, "timestamp": timestamp, **analysis},
+                measurement={"timestamp": timestamp, **analysis},
                 photo_path=photo_path
             )
             if drive_info:
