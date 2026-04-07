@@ -99,45 +99,96 @@ def detect_media_type(photo_path):
     return type_map.get(ext, "image/jpeg")
 
 
-def analyze_photo(photo_path, baseline_nivel=None):
-    """Send photo to Claude Haiku and extract fermentation metrics."""
+def analyze_photo(photo_path, baseline_foto_path=None, baseline_nivel=None, tiempo_min=None):
+    """Send photo to Claude and extract fermentation metrics.
+
+    If baseline_foto_path is provided (comparative mode), Claude receives BOTH the baseline
+    photo and the current photo and estimates RELATIVE growth — much more accurate than
+    single-photo absolute estimation.
+    """
     api_key = get_api_key()
     config = load_config()
     model = config.get("claude", {}).get("model", "claude-haiku-4-5")
 
-    # Compress if needed
+    # Prepare current photo
     photo_to_encode = str(photo_path)
     if os.path.getsize(photo_path) > 4 * 1024 * 1024:
         photo_to_encode = compress_image(photo_path)
+    current_b64 = encode_image(photo_to_encode)
+    current_media = detect_media_type(photo_path)
 
-    img_b64 = encode_image(photo_to_encode)
-    media_type = detect_media_type(photo_path)
+    # Decide whether to use comparative mode
+    use_comparative = (
+        baseline_foto_path is not None and
+        Path(baseline_foto_path).exists() and
+        str(baseline_foto_path) != str(photo_path)
+    )
 
-    baseline_txt = ""
-    if baseline_nivel is not None:
-        baseline_txt = f"El nivel baseline (inicio) fue de {baseline_nivel}% del frasco."
+    if use_comparative:
+        # Prepare baseline photo
+        baseline_to_encode = str(baseline_foto_path)
+        if os.path.getsize(baseline_foto_path) > 4 * 1024 * 1024:
+            baseline_to_encode = compress_image(baseline_foto_path)
+        baseline_b64 = encode_image(baseline_to_encode)
+        baseline_media = detect_media_type(baseline_foto_path)
+        tiempo_txt = f" ({tiempo_min:.0f} minutos después)" if tiempo_min else ""
 
-    prompt = f"""Eres un analizador experto de masa madre (sourdough starter).
-Analiza esta foto del frasco de fermento y responde SOLO con JSON válido, sin texto adicional.
+        prompt = f"""Eres un experto en análisis visual de fermentación de masa madre.
 
-{baseline_txt}
+Se te muestran DOS fotos del MISMO frasco de fermento:
+- IMAGEN 1 (primera): Foto INICIAL del día. El fermento está en su nivel de partida.
+- IMAGEN 2 (segunda): Foto ACTUAL{tiempo_txt}.
 
-Busca en la imagen:
-1. Una marca de referencia (cinta, marcador) en el frasco que indica el nivel inicial
-2. El nivel actual del fermento (la superficie visible)
-3. La actividad del fermento (burbujas, textura)
+Tu tarea:
+1. Identifica la MARCA DE REFERENCIA en el frasco (cinta adhesiva, marcador, banda de goma)
+2. Compara la altura de la superficie visible del fermento entre ambas fotos
+3. Estima cuánto ha crecido el fermento: 100=igual al inicio, 150=creció 50% más
+4. Asigna tu nivel de confianza en la medición
 
-Responde con este JSON exacto:
+Responde SOLO con JSON válido, sin texto adicional:
 {{
-  "nivel_pct": <número 0-200, donde 100=nivel inicial, 150=creció 50%, etc.>,
-  "nivel_px": <altura estimada de la superficie del fermento en píxeles desde la base>,
+  "nivel_pct": <número: 100=igual a inicio, 120=creció 20%, etc. Usa null si no puedes comparar>,
   "burbujas": "<ninguna|pocas|muchas>",
   "textura": "<lisa|rugosa|muy_activa>",
   "notas": "<observación breve en español, máx 100 chars>",
-  "visible_marca": <true|false, si se ve la marca de referencia>
+  "visible_marca": <true|false, si se ve la marca de referencia en la imagen actual>,
+  "confianza": <1-5; 5=marca visible y comparación clara, 3=estimación razonable, 1=no pude ver bien>
 }}
 
-Si no puedes ver el frasco claramente, usa nivel_pct: null."""
+Regla: nivel_pct >= 100 salvo que el fermento claramente haya bajado del nivel inicial."""
+
+        content = [
+            {"type": "image", "source": {"type": "base64", "media_type": baseline_media, "data": baseline_b64}},
+            {"type": "image", "source": {"type": "base64", "media_type": current_media,  "data": current_b64}},
+            {"type": "text", "text": prompt}
+        ]
+
+    else:
+        # Single-photo fallback (first measurement of a session, or no baseline photo)
+        baseline_txt = f"\nEl nivel inicial fue {baseline_nivel:.0f}% del frasco." if baseline_nivel else ""
+
+        prompt = f"""Eres un analizador experto de masa madre (sourdough starter).
+Analiza esta foto del frasco de fermento y responde SOLO con JSON válido.
+{baseline_txt}
+Busca:
+1. La MARCA DE REFERENCIA en el frasco (cinta adhesiva, marcador, banda de goma) = nivel 100%
+2. La superficie actual visible del fermento
+
+Responde con JSON:
+{{
+  "nivel_pct": <número 0-200, donde 100=nivel de la marca, 150=creció 50% sobre la marca>,
+  "burbujas": "<ninguna|pocas|muchas>",
+  "textura": "<lisa|rugosa|muy_activa>",
+  "notas": "<observación breve en español, máx 100 chars>",
+  "visible_marca": <true|false>,
+  "confianza": <1-5; 5=marca visible y medición clara, 1=imagen poco clara>
+}}
+Si no puedes ver el frasco, usa nivel_pct: null y confianza: 1."""
+
+        content = [
+            {"type": "image", "source": {"type": "base64", "media_type": current_media, "data": current_b64}},
+            {"type": "text", "text": prompt}
+        ]
 
     response = requests.post(
         "https://api.anthropic.com/v1/messages",
@@ -148,23 +199,10 @@ Si no puedes ver el frasco claramente, usa nivel_pct: null."""
         },
         json={
             "model": model,
-            "max_tokens": 300,
-            "messages": [{
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": media_type,
-                            "data": img_b64
-                        }
-                    },
-                    {"type": "text", "text": prompt}
-                ]
-            }]
+            "max_tokens": 400,
+            "messages": [{"role": "user", "content": content}]
         },
-        timeout=30
+        timeout=45
     )
 
     result = response.json()

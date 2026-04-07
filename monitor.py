@@ -20,7 +20,7 @@ from datetime import datetime, timedelta
 BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
 
-from db import init_db, get_or_create_session, close_session, save_measurement, detect_peak, migrate_historical_data, get_latest_measurement, get_session_measurements
+from db import init_db, get_or_create_session, close_session, save_measurement, detect_peak, migrate_historical_data, get_latest_measurement, get_session_measurements, get_baseline_foto
 from analyze import analyze_photo, capture_photo
 from chart import load_session_data, make_chart
 from notify import send_update_email, send_peak_alert
@@ -99,17 +99,39 @@ def run_cycle(conn, session):
         log("⚠️ Capture failed, skipping cycle")
         return None
 
-    # 2. Get baseline from session
+    # 2. Get baseline measurement info for comparative analysis
     baseline = conn.execute(
         "SELECT nivel_pct FROM mediciones WHERE sesion_id = ? AND nivel_pct IS NOT NULL ORDER BY id LIMIT 1",
         (session_id,)
     ).fetchone()
     baseline_nivel = baseline[0] if baseline else None
+    baseline_foto = get_baseline_foto(conn, session_id)  # path to first photo of session
 
-    # 3. Analyze with Claude
+    # Compute elapsed time since first measurement
+    first_ts = conn.execute(
+        "SELECT timestamp FROM mediciones WHERE sesion_id = ? ORDER BY id LIMIT 1",
+        (session_id,)
+    ).fetchone()
+    tiempo_min = None
+    if first_ts:
+        from datetime import datetime as _dt
+        try:
+            inicio = _dt.fromisoformat(first_ts[0])
+            tiempo_min = (_dt.now() - inicio).total_seconds() / 60
+        except Exception:
+            pass
+
+    # 3. Analyze with Claude (comparative mode if baseline photo exists)
     try:
-        analysis = analyze_photo(photo_path, baseline_nivel)
-        log(f"📊 Level: {analysis.get('nivel_pct')}% | Bubbles: {analysis.get('burbujas')} | {analysis.get('notas')}")
+        analysis = analyze_photo(
+            photo_path,
+            baseline_foto_path=baseline_foto,
+            baseline_nivel=baseline_nivel,
+            tiempo_min=tiempo_min
+        )
+        modo = analysis.get('_modo', 'single')
+        confianza = analysis.get('confianza', '?')
+        log(f"📊 [{modo}] Confianza:{confianza}/5 | Level:{analysis.get('nivel_pct')}% | Bubbles:{analysis.get('burbujas')} | {analysis.get('notas')}")
     except Exception as e:
         log(f"⚠️ Analysis failed: {e}")
         analysis = {
@@ -117,8 +139,25 @@ def run_cycle(conn, session):
             "nivel_px": None,
             "burbujas": "N/A",
             "textura": "N/A",
-            "notas": f"Analysis error: {str(e)[:80]}"
+            "notas": f"Analysis error: {str(e)[:80]}",
+            "confianza": None
         }
+
+    # 3b. Outlier / jump validation — flag suspicious readings
+    MAX_JUMP = 20  # max % jump from recent 3-point average
+    if analysis.get('nivel_pct') is not None:
+        recent_rows = conn.execute(
+            "SELECT nivel_pct FROM mediciones WHERE sesion_id = ? AND nivel_pct IS NOT NULL ORDER BY id DESC LIMIT 3",
+            (session_id,)
+        ).fetchall()
+        if len(recent_rows) >= 3:
+            recent_avg = sum(r[0] for r in recent_rows) / len(recent_rows)
+            jump = abs(analysis['nivel_pct'] - recent_avg)
+            if jump > MAX_JUMP:
+                flag = f"[OUTLIER +{jump:.0f}%] "
+                analysis['notas'] = (flag + (analysis.get('notas') or ''))[:100]
+                analysis['confianza'] = min(analysis.get('confianza') or 3, 2)
+                log(f"⚠️ Suspicious reading: {jump:.0f}% jump from recent avg ({recent_avg:.0f}%). Flagged.")
 
     # 4. Save to database
     timestamp = save_measurement(conn, session_id, photo_path, analysis)

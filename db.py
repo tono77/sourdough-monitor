@@ -48,7 +48,9 @@ def init_db():
             burbujas TEXT,
             textura TEXT,
             notas TEXT,
-            es_peak INTEGER DEFAULT 0
+            es_peak INTEGER DEFAULT 0,
+            confianza INTEGER DEFAULT NULL,
+            modo_analisis TEXT DEFAULT NULL
         );
     """)
     conn.commit()
@@ -59,6 +61,17 @@ def init_db():
     except sqlite3.OperationalError:
         conn.execute("ALTER TABLE mediciones ADD COLUMN sesion_id INTEGER REFERENCES sesiones(id)")
         conn.commit()
+
+    # Migrate: add confianza column if missing
+    cursor = conn.execute("PRAGMA table_info(mediciones)")
+    existing_cols = {row[1] for row in cursor.fetchall()}
+    for col_def in [
+        ("confianza",     "ALTER TABLE mediciones ADD COLUMN confianza INTEGER DEFAULT NULL"),
+        ("modo_analisis", "ALTER TABLE mediciones ADD COLUMN modo_analisis TEXT DEFAULT NULL"),
+    ]:
+        if col_def[0] not in existing_cols:
+            conn.execute(col_def[1])
+    conn.commit()
 
     return conn
 
@@ -153,8 +166,9 @@ def save_measurement(conn, session_id, photo_path, analysis):
     """Save a new measurement to the database."""
     timestamp = datetime.now().isoformat()
     conn.execute("""
-        INSERT INTO mediciones (sesion_id, timestamp, foto_path, nivel_pct, nivel_px, burbujas, textura, notas)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO mediciones
+            (sesion_id, timestamp, foto_path, nivel_pct, nivel_px, burbujas, textura, notas, confianza, modo_analisis)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         session_id,
         timestamp,
@@ -163,7 +177,9 @@ def save_measurement(conn, session_id, photo_path, analysis):
         analysis.get("nivel_px"),
         analysis.get("burbujas"),
         analysis.get("textura"),
-        analysis.get("notas")
+        analysis.get("notas"),
+        analysis.get("confianza"),
+        analysis.get("_modo", "single")
     ))
     # Update session measurement count
     conn.execute(
@@ -172,6 +188,16 @@ def save_measurement(conn, session_id, photo_path, analysis):
     )
     conn.commit()
     return timestamp
+
+
+def get_baseline_foto(conn, session_id):
+    """Get the file path of the first (baseline) photo for a session."""
+    row = conn.execute("""
+        SELECT foto_path FROM mediciones
+        WHERE sesion_id = ? AND foto_path IS NOT NULL
+        ORDER BY id ASC LIMIT 1
+    """, (session_id,)).fetchone()
+    return row[0] if row else None
 
 
 def detect_peak(conn, session_id):
