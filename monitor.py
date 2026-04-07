@@ -241,7 +241,7 @@ def main():
         # Run capture + analyze cycle
         analysis, drive_url = run_cycle(conn, session)
 
-        # Send email every 30 minutes
+        # Send email every hour
         now = time.time()
         if last_email_time is None or (now - last_email_time) >= email_interval:
             try:
@@ -251,6 +251,13 @@ def main():
                 if session.get("hora_inicio"):
                     start = datetime.fromisoformat(session["hora_inicio"])
                     elapsed = (datetime.now() - start).total_seconds() / 3600
+
+                # Normalize nivel: first measurement = 0%, rest = delta from baseline
+                valid = [m for m in measurements if m.get("nivel_pct") is not None]
+                if latest and latest.get("nivel_pct") is not None and valid:
+                    baseline = float(valid[0]["nivel_pct"])
+                    norm_nivel = round(float(latest["nivel_pct"]) - baseline, 1)
+                    latest = {**latest, "nivel_pct": norm_nivel}
 
                 send_update_email(session, latest, len(measurements), elapsed,
                                   photo_url=drive_url)

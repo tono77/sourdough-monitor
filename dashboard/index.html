@@ -920,7 +920,8 @@
                         },
                         y: {
                             grid: { color: 'rgba(255,255,255,0.03)' },
-                            title: { display: true, text: 'Nivel (%)', color: '#666' }
+                            title: { display: true, text: 'Crecimiento desde inicio (%)', color: '#666' },
+                            ticks: { callback: v => `${v >= 0 ? '+' : ''}${v}%` }
                         }
                     }
                 }
@@ -1083,16 +1084,22 @@
                     `${session.num_mediciones || measurements.length} mediciones`;
             }
 
+            // Normalize: first valid measurement = 0%, rest = delta from baseline
+            const validMeds = measurements.filter(m => m.nivel_pct != null);
+            const baselineRaw = validMeds.length > 0 ? parseFloat(validMeds[0].nivel_pct) : null;
+            const norm = (raw) => (raw != null && baselineRaw != null) ? parseFloat(raw) - baselineRaw : null;
+
             // Metrics
             if (latest) {
-                const level = latest.nivel_pct;
+                const level = norm(latest.nivel_pct);
                 document.getElementById('levelValue').textContent =
-                    level != null ? `${parseFloat(level).toFixed(0)}%` : '--';
+                    level != null ? `${level >= 0 ? '+' : ''}${level.toFixed(0)}%` : '--';
 
                 if (measurements.length >= 2) {
                     const prev = measurements[measurements.length - 2];
-                    if (prev.nivel_pct != null && level != null) {
-                        const diff = parseFloat(level) - parseFloat(prev.nivel_pct);
+                    const prevNorm = norm(prev.nivel_pct);
+                    if (prevNorm != null && level != null) {
+                        const diff = level - prevNorm;
                         const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
                         const sub = document.getElementById('levelSub');
                         sub.textContent = `${arrow} ${diff > 0 ? '+' : ''}${diff.toFixed(1)}%`;
@@ -1130,10 +1137,11 @@
             const peakBanner = document.getElementById('peakBanner');
             if (peakMeasurement || session.peak_nivel) {
                 peakBanner.classList.add('visible');
-                const peakLevel = peakMeasurement ? peakMeasurement.nivel_pct : session.peak_nivel;
+                const peakRaw = peakMeasurement ? peakMeasurement.nivel_pct : session.peak_nivel;
+                const peakLevel = norm(peakRaw);
                 const peakTime = peakMeasurement ? peakMeasurement.timestamp : session.peak_timestamp;
                 document.getElementById('peakInfo').textContent =
-                    `Nivel máximo: ${parseFloat(peakLevel).toFixed(0)}% a las ${peakTime ? new Date(peakTime).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : '--'}`;
+                    `Crecimiento máximo: +${peakLevel != null ? peakLevel.toFixed(0) : '--'}% a las ${peakTime ? new Date(peakTime).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : '--'}`;
             } else {
                 peakBanner.classList.remove('visible');
             }
@@ -1148,14 +1156,18 @@
             const valid = measurements.filter(m => m.nivel_pct != null);
             if (!valid.length) return;
 
+            // Normalize chart values: first = 0, rest = delta from baseline
+            const chartBaseline = parseFloat(valid[0].nivel_pct);
+            const chartNorm = (raw) => parseFloat(raw) - chartBaseline;
+
             const bubbleMap = { 'ninguna': 0, 'pocas': 1, 'muchas': 2 };
 
             levelChart.data.datasets[0].data = valid.map(m => ({
-                x: new Date(m.timestamp), y: parseFloat(m.nivel_pct)
+                x: new Date(m.timestamp), y: chartNorm(m.nivel_pct)
             }));
             levelChart.data.datasets[1].data = valid
                 .filter(m => m.es_peak === 1 || m.es_peak === true)
-                .map(m => ({ x: new Date(m.timestamp), y: parseFloat(m.nivel_pct) }));
+                .map(m => ({ x: new Date(m.timestamp), y: chartNorm(m.nivel_pct) }));
             levelChart.update('none');
 
             activityChart.data.datasets[0].data = measurements.map(m => ({
@@ -1193,16 +1205,24 @@
                 return;
             }
 
+            // Compute baseline from all measurements for gallery normalization
+            const galleryValid = measurements.filter(m => m.nivel_pct != null);
+            const galleryBaseline = galleryValid.length > 0 ? parseFloat(galleryValid[0].nivel_pct) : null;
+
             grid.innerHTML = withPhotos.map(m => {
                 const t = new Date(m.timestamp);
                 const time = t.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
-                const level = m.nivel_pct ? `${parseFloat(m.nivel_pct).toFixed(0)}%` : '';
+                let levelLabel = '';
+                if (m.nivel_pct != null && galleryBaseline != null) {
+                    const normVal = parseFloat(m.nivel_pct) - galleryBaseline;
+                    levelLabel = `${normVal >= 0 ? '+' : ''}${normVal.toFixed(0)}%`;
+                }
                 return `<div class="gallery-thumb" onclick="openLightboxSrc('${m.foto_url}')">
                     <img src="${m.foto_url}" alt="${time}" loading="lazy"
                          onerror="this.parentElement.style.display='none'">
                     <div class="gallery-label">
                         <span class="gl-time">${time}</span>
-                        ${level ? `<span class="gl-level">${level}</span>` : ''}
+                        ${levelLabel ? `<span class="gl-level">${levelLabel}</span>` : ''}
                     </div>
                 </div>`;
             }).join('');
