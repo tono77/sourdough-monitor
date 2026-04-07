@@ -23,7 +23,18 @@ charts/
 data/sourdough.log
 data/daemon.log
 data/*.db
+data/*.db-shm
+data/*.db-wal
+data/*.db.bak
+data/*.log
+
+# Secrets — NEVER commit these
+data/firebase-service-account.json
+data/gdrive_credentials.json
+data/gdrive_token.json
 
 # Temporal
 *.tmp
 /tmp/
+config.json
+venv/

@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Sessions: authenticated users can read, no client writes
+    match /sesiones/{sessionId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only Admin SDK can write
+    }
+
+    // Measurements: authenticated users can read, no client writes
+    match /sesiones/{sessionId}/mediciones/{measurementId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only Admin SDK can write
+    }
+
+    // Status document: authenticated users can read
+    match /status/{docId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

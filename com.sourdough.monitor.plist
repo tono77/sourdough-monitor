@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.sourdough.monitor</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/moltbot/Projects/sourdough-monitor/venv/bin/python3</string>
+        <string>/Users/moltbot/Projects/sourdough-monitor/monitor.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/moltbot/Projects/sourdough-monitor</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <!-- ANTHROPIC_API_KEY: set this in your environment or load from a secrets file -->
+        <!-- Do NOT hardcode secrets here. Use: launchctl setenv ANTHROPIC_API_KEY "your-key" -->
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/moltbot/Projects/sourdough-monitor/data/monitor_stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/moltbot/Projects/sourdough-monitor/data/monitor_stderr.log</string>
+
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+</dict>
+</plist>

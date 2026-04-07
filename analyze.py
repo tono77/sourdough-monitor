@@ -1,49 +1,57 @@
 #!/usr/bin/env python3
 """
-Sourdough Monitor — Análisis de imagen con Claude Vision
-Mide el nivel del fermento en el frasco y lo guarda en SQLite.
+Sourdough Monitor — Claude Vision analysis
+Analyzes sourdough starter photos using Claude Haiku for fermentation metrics.
 """
 
 import sys
 import os
-import sqlite3
 import base64
 import json
 import re
 import requests
 import subprocess
 import mimetypes
-from datetime import datetime
 from pathlib import Path
+from datetime import datetime
 
-WORKSPACE = Path("/Users/moltbot/.openclaw/workspace/sourdough")
-DB_PATH = WORKSPACE / "data" / "fermento.db"
-PHOTOS_DIR = WORKSPACE / "photos"
+BASE_DIR = Path(__file__).resolve().parent
+CONFIG_PATH = BASE_DIR / "config.json"
 
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS mediciones (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT NOT NULL,
-            foto_path TEXT NOT NULL,
-            nivel_pct REAL,         -- % de crecimiento vs baseline
-            nivel_px INTEGER,        -- altura estimada en píxeles
-            burbujas TEXT,           -- ninguna/pocas/muchas
-            textura TEXT,            -- lisa/rugosa/activa
-            notas TEXT,              -- observación del modelo
-            es_peak INTEGER DEFAULT 0
-        )
-    """)
-    conn.commit()
-    return conn
+
+def load_config():
+    """Load configuration."""
+    if CONFIG_PATH.exists():
+        with open(CONFIG_PATH) as f:
+            return json.load(f)
+    return {}
+
+
+def get_api_key():
+    """Get Anthropic API key from environment or config files."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if api_key:
+        return api_key
+
+    # Check openclaw config
+    config_paths = [
+        Path.home() / ".openclaw" / "config.json",
+        Path("/Users/moltbot/.openclaw/config.json"),
+    ]
+    for cp in config_paths:
+        if cp.exists():
+            with open(cp) as f:
+                cfg = json.load(f)
+            api_key = cfg.get("anthropic", {}).get("apiKey", "")
+            if api_key:
+                return api_key
+
+    raise ValueError("No ANTHROPIC_API_KEY found. Set it as environment variable or in ~/.openclaw/config.json")
+
 
 def compress_image(photo_path, target_size_mb=3):
-    """Comprime imagen JPG a menos de 5MB para Claude."""
-    # Usar ffmpeg para recompresar
+    """Compress image to fit Claude's size limits."""
     compressed_path = str(photo_path).replace(".jpg", "_compressed.jpg")
-    
-    # Estima calidad inicial
     quality = 85
     for attempt in range(5):
         subprocess.run([
@@ -51,61 +59,49 @@ def compress_image(photo_path, target_size_mb=3):
             "-q:v", str(quality),
             "-y", compressed_path
         ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
-        
-        size_mb = os.path.getsize(compressed_path) / (1024 * 1024)
-        if size_mb < target_size_mb:
-            return compressed_path
+
+        if os.path.exists(compressed_path):
+            size_mb = os.path.getsize(compressed_path) / (1024 * 1024)
+            if size_mb < target_size_mb:
+                return compressed_path
         quality -= 5
-    
+
     return compressed_path
 
+
 def encode_image(path):
+    """Encode image to base64."""
     with open(path, "rb") as f:
         return base64.standard_b64encode(f.read()).decode("utf-8")
 
-def analyze_photo(photo_path: str, baseline_nivel: float = None) -> dict:
-    """Envía foto a Claude Haiku y extrae métricas del fermento."""
-    
-    # Leer API key de Anthropic
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not api_key:
-        config_paths = [
-            "/Users/moltbot/.openclaw/config.json",
-            os.path.expanduser("~/.openclaw/config.json"),
-        ]
-        for cp in config_paths:
-            if os.path.exists(cp):
-                with open(cp) as f:
-                    cfg = json.load(f)
-                api_key = cfg.get("anthropic", {}).get("apiKey", "")
-                if api_key:
-                    break
 
-    if not api_key:
-        raise ValueError("No se encontró ANTHROPIC_API_KEY")
+def detect_media_type(photo_path):
+    """Detect MIME type from file extension."""
+    ext = Path(photo_path).suffix.lower()
+    type_map = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".webp": "image/webp",
+        ".gif": "image/gif",
+    }
+    return type_map.get(ext, "image/jpeg")
 
-    # Comprimir imagen si es necesario
-    photo_to_encode = photo_path
+
+def analyze_photo(photo_path, baseline_nivel=None):
+    """Send photo to Claude Haiku and extract fermentation metrics."""
+    api_key = get_api_key()
+    config = load_config()
+    model = config.get("claude", {}).get("model", "claude-haiku-4-5")
+
+    # Compress if needed
+    photo_to_encode = str(photo_path)
     if os.path.getsize(photo_path) > 4 * 1024 * 1024:
         photo_to_encode = compress_image(photo_path)
-    
+
     img_b64 = encode_image(photo_to_encode)
-    
-    # Detectar tipo MIME basado en la extensión real del archivo
-    ext = Path(photo_path).suffix.lower()
-    if ext == ".png":
-        media_type = "image/png"
-    elif ext in [".jpg", ".jpeg"]:
-        media_type = "image/jpeg"
-    elif ext == ".webp":
-        media_type = "image/webp"
-    elif ext == ".gif":
-        media_type = "image/gif"
-    else:
-        # Fallback: intentar detectar por la extensión del archivo a codificar
-        detected_type, _ = mimetypes.guess_type(photo_to_encode)
-        media_type = detected_type or "image/jpeg"
-    
+    media_type = detect_media_type(photo_path)
+
     baseline_txt = ""
     if baseline_nivel is not None:
         baseline_txt = f"El nivel baseline (inicio) fue de {baseline_nivel}% del frasco."
@@ -140,7 +136,7 @@ Si no puedes ver el frasco claramente, usa nivel_pct: null."""
             "content-type": "application/json"
         },
         json={
-            "model": "claude-haiku-4-5",
+            "model": model,
             "max_tokens": 300,
             "messages": [{
                 "role": "user",
@@ -159,88 +155,88 @@ Si no puedes ver el frasco claramente, usa nivel_pct: null."""
         },
         timeout=30
     )
-    
+
     result = response.json()
     if "error" in result:
         raise ValueError(f"Claude API error: {result['error']['message']}")
-    
+
     text = result["content"][0]["text"].strip()
-    
-    # Extraer JSON del texto
+
+    # Extract JSON from response
     match = re.search(r'\{.*\}', text, re.DOTALL)
     if match:
         return json.loads(match.group())
     return json.loads(text)
 
-def save_measurement(conn, photo_path, analysis):
-    timestamp = datetime.now().isoformat()
-    conn.execute("""
-        INSERT INTO mediciones (timestamp, foto_path, nivel_pct, nivel_px, burbujas, textura, notas)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (
-        timestamp,
-        photo_path,
-        analysis.get("nivel_pct"),
-        analysis.get("nivel_px"),
-        analysis.get("burbujas"),
-        analysis.get("textura"),
-        analysis.get("notas")
-    ))
-    conn.commit()
-    print(f"[{timestamp}] Nivel: {analysis.get('nivel_pct')}% | Burbujas: {analysis.get('burbujas')} | {analysis.get('notas')}")
 
-def detect_peak(conn):
-    """Detecta el primer descenso (inicio del peak)."""
-    # Obtener últimas 2 mediciones
-    rows = conn.execute("""
-        SELECT id, nivel_pct FROM mediciones 
-        WHERE nivel_pct IS NOT NULL 
-        ORDER BY id DESC LIMIT 2
-    """).fetchall()
-    
-    if len(rows) < 2:
-        return False, None
-    
-    # rows está ordenado descendente, invertir para obtener orden cronológico
-    prev_level = rows[1][1]  # medición anterior
-    curr_level = rows[0][1]  # medición actual
-    
-    # Detectar si ya hay un peak registrado
-    peak_count = conn.execute("SELECT COUNT(*) FROM mediciones WHERE es_peak=1").fetchone()[0]
-    
-    # Peak si es el primer descenso Y aún no hay peak registrado
-    if curr_level < prev_level and peak_count == 0:
-        # El peak ocurrió en la medición anterior (el máximo antes del descenso)
-        peak_row = conn.execute("""
-            SELECT timestamp, nivel_pct FROM mediciones 
-            WHERE nivel_pct = (SELECT MAX(nivel_pct) FROM mediciones)
-            LIMIT 1
-        """).fetchone()
-        return True, peak_row
-    
-    return False, None
+def capture_photo():
+    """Capture a photo from the camera using ffmpeg."""
+    config = load_config()
+    camera_index = config.get("capture", {}).get("camera_index", "0")
+
+    photos_dir = BASE_DIR / "photos"
+    photos_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    output = photos_dir / f"fermento_{timestamp}.jpg"
+
+    try:
+        result = subprocess.run(
+            [
+                "/opt/homebrew/bin/ffmpeg",
+                "-f", "avfoundation",
+                "-framerate", "30",
+                "-i", camera_index,
+                "-frames:v", "1",
+                "-update", "1",
+                "-y", str(output)
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=15
+        )
+
+        if output.exists() and output.stat().st_size > 1000:
+            # Create latest.jpg symlink
+            latest = photos_dir / "latest.jpg"
+            if latest.exists() or latest.is_symlink():
+                latest.unlink()
+            latest.symlink_to(output.name)
+            print(f"📸 Captured: {output.name} ({output.stat().st_size / 1024:.0f}KB)")
+            return str(output)
+        else:
+            print(f"⚠️ Capture failed: file too small or missing")
+            return None
+    except subprocess.TimeoutExpired:
+        print("⚠️ Camera capture timed out")
+        return None
+    except Exception as e:
+        print(f"⚠️ Capture error: {e}")
+        return None
+
 
 if __name__ == "__main__":
+    from db import init_db, save_measurement as db_save, detect_peak
+
     if len(sys.argv) < 2:
-        print("Uso: python3 analyze.py <ruta_foto.jpg>")
-        sys.exit(1)
-    
-    photo_path = sys.argv[1]
+        # Auto-capture mode
+        photo = capture_photo()
+        if not photo:
+            print("Failed to capture photo")
+            sys.exit(1)
+    else:
+        photo = sys.argv[1]
+
     conn = init_db()
-    
-    # Obtener baseline (primer nivel registrado)
-    baseline = conn.execute("SELECT nivel_pct FROM mediciones ORDER BY id LIMIT 1").fetchone()
+
+    # Get baseline
+    baseline = conn.execute(
+        "SELECT nivel_pct FROM mediciones WHERE nivel_pct IS NOT NULL ORDER BY id LIMIT 1"
+    ).fetchone()
     baseline_nivel = baseline[0] if baseline else None
-    
-    print(f"Analizando: {photo_path}")
-    analysis = analyze_photo(photo_path, baseline_nivel)
-    save_measurement(conn, photo_path, analysis)
-    
-    # Verificar peak
-    is_peak, peak_info = detect_peak(conn)
-    if is_peak:
-        print(f"\n🎯 PEAK DETECTADO! Máximo en: {peak_info[0]} con nivel {peak_info[1]}%")
-        conn.execute("UPDATE mediciones SET es_peak=1 WHERE timestamp=?", (peak_info[0],))
-        conn.commit()
-    
+
+    print(f"🔍 Analyzing: {photo}")
+    analysis = analyze_photo(photo, baseline_nivel)
+    print(f"   Level: {analysis.get('nivel_pct')}% | Bubbles: {analysis.get('burbujas')} | {analysis.get('notas')}")
+
     conn.close()

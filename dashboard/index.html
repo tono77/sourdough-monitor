@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍞 Sourdough Monitor — Dashboard</title>
+    <meta name="description" content="Real-time sourdough fermentation monitoring dashboard with AI-powered analysis">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-deep: #060614;
+            --bg-primary: #0c0c24;
+            --bg-card: rgba(255,255,255,0.03);
+            --bg-card-hover: rgba(255,255,255,0.06);
+            --border-subtle: rgba(255,255,255,0.06);
+            --border-glow: rgba(233,69,96,0.3);
+            --accent-primary: #e94560;
+            --accent-warm: #ff6b35;
+            --accent-gold: #ffc107;
+            --accent-green: #4caf50;
+            --accent-blue: #5c6bc0;
+            --text-primary: #eaeaea;
+            --text-secondary: #999;
+            --text-muted: #555;
+            --glass-blur: 24px;
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --shadow-glow: 0 0 40px rgba(233,69,96,0.06);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(233,69,96,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(255,107,53,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(92,107,192,0.03) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ─── LOGIN SCREEN ─── */
+        #loginScreen {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-deep);
+        }
+
+        #loginScreen::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 30% 40%, rgba(233,69,96,0.1) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 60%, rgba(255,107,53,0.07) 0%, transparent 50%);
+        }
+
+        .login-card {
+            position: relative;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 28px;
+            padding: 52px 48px;
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            backdrop-filter: blur(32px);
+            box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+        }
+
+        .login-logo {
+            font-size: 64px;
+            display: block;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 20px rgba(255,193,7,0.5));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        .login-card h1 {
+            font-size: 26px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #eee 0%, #aaa 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .login-card p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 36px;
+            line-height: 1.6;
+        }
+
+        #googleSignInBtn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px 24px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.07);
+            color: var(--text-primary);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        #googleSignInBtn:hover {
+            background: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.2);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+
+        #googleSignInBtn svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .login-footer {
+            margin-top: 28px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* ─── MAIN DASHBOARD ─── */
+        #app { display: none; }
+        #app.visible { display: block; }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo {
+            font-size: 28px;
+            filter: drop-shadow(0 0 8px rgba(255,193,7,0.4));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #eee, #aaa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* User avatar */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.15);
+            object-fit: cover;
+        }
+
+        .user-name {
+            font-size: 12px;
+            color: var(--text-muted);
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #signOutBtn {
+            background: none;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-muted);
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        #signOutBtn:hover { border-color: rgba(233,69,96,0.4); color: var(--accent-primary); }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .status-badge.active {
+            background: rgba(76,175,80,0.12);
+            border: 1px solid rgba(76,175,80,0.3);
+            color: #4caf50;
+        }
+
+        .status-badge.inactive {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #888;
+        }
+
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-badge.active .status-dot { background: #4caf50; }
+        .status-badge.inactive .status-dot { background: #555; animation: none; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(76,175,80,0.4); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(76,175,80,0); }
+        }
+
+        .timer {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        .card-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        /* Metrics Row */
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            text-align: center;
+            padding: 20px 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            border-radius: 2px;
+        }
+
+        .metric-card.level::after { background: linear-gradient(90deg, var(--accent-primary), var(--accent-warm)); }
+        .metric-card.bubbles::after { background: linear-gradient(90deg, #e8a045, #ffc107); }
+        .metric-card.texture::after { background: linear-gradient(90deg, var(--accent-blue), #7c4dff); }
+        .metric-card.time::after { background: linear-gradient(90deg, var(--accent-green), #66bb6a); }
+
+        .metric-value {
+            font-size: 36px;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 4px;
+            letter-spacing: -1px;
+        }
+
+        .metric-card.level .metric-value { color: var(--accent-primary); }
+        .metric-card.bubbles .metric-value { color: #e8a045; font-size: 28px; }
+        .metric-card.texture .metric-value { color: var(--accent-blue); font-size: 28px; }
+        .metric-card.time .metric-value { color: var(--accent-green); }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .metric-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        /* Chart Section */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 320px;
+        }
+
+        .chart-container canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* Latest Photo */
+        .photo-card {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .photo-frame {
+            flex: 1;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 240px;
+            border: 1px solid var(--border-subtle);
+            cursor: pointer;
+        }
+
+        .photo-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .photo-frame img:hover { transform: scale(1.05); }
+        .photo-frame .placeholder { color: var(--text-muted); font-size: 40px; }
+
+        .photo-time {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        /* Activity Chart */
+        .activity-section { margin-bottom: 20px; }
+
+        .activity-chart-container { height: 140px; }
+
+        /* Notes */
+        .notes-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            background: rgba(255,107,53,0.05);
+            border: 1px solid rgba(255,107,53,0.12);
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+        }
+
+        .notes-icon { font-size: 16px; }
+
+        .notes-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        /* Session Selector */
+        .sessions-section { margin-bottom: 20px; }
+
+        .sessions-grid {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 4px 0;
+            scrollbar-width: thin;
+            scrollbar-color: #333 transparent;
+        }
+
+        .session-chip {
+            flex-shrink: 0;
+            padding: 8px 16px;
+            border-radius: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .session-chip:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(255,255,255,0.15);
+        }
+
+        .session-chip.active {
+            background: rgba(233,69,96,0.1);
+            border-color: rgba(233,69,96,0.3);
+            color: var(--accent-primary);
+        }
+
+        .session-chip .chip-date { font-weight: 600; color: var(--text-primary); }
+        .session-chip.active .chip-date { color: var(--accent-primary); }
+        .session-chip .chip-meta { color: var(--text-muted); font-size: 10px; margin-top: 2px; }
+
+        .chip-status {
+            display: inline-block;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            margin-right: 4px;
+        }
+        .chip-status.live { background: #4caf50; }
+        .chip-status.done { background: #555; }
+
+        /* Photo Gallery */
+        .gallery-section { margin-bottom: 20px; }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 8px;
+        }
+
+        .gallery-thumb {
+            aspect-ratio: 1;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            cursor: pointer;
+            border: 1px solid var(--border-subtle);
+            transition: all 0.2s ease;
+            background: rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .gallery-thumb:hover {
+            border-color: var(--accent-primary);
+            transform: scale(1.05);
+        }
+
+        .gallery-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gallery-label {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            padding: 4px 6px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.75));
+            font-size: 10px;
+            font-weight: 600;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            pointer-events: none;
+        }
+
+        .gallery-label .gl-time { color: #eee; }
+        .gallery-label .gl-level { color: #e94560; }
+
+        /* Peak Banner */
+        .peak-banner {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,107,53,0.08));
+            border: 1px solid rgba(255,215,0,0.2);
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        .peak-banner.visible { display: flex; }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 10px rgba(255,215,0,0.05); }
+            to { box-shadow: 0 0 30px rgba(255,215,0,0.12); }
+        }
+
+        .peak-icon { font-size: 28px; }
+        .peak-text h3 { color: var(--accent-gold); font-size: 14px; font-weight: 700; }
+        .peak-text p { color: var(--text-secondary); font-size: 12px; margin-top: 2px; }
+
+        /* Realtime indicator */
+        .realtime-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #4caf50;
+            font-weight: 600;
+        }
+        .realtime-dot {
+            width: 6px; height: 6px;
+            background: #4caf50;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+        .empty-state h2 { color: var(--text-secondary); font-size: 18px; margin-bottom: 8px; }
+        .empty-state p { font-size: 13px; max-width: 400px; margin: 0 auto; }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .metrics-row { grid-template-columns: repeat(2, 1fr); }
+            .charts-grid { grid-template-columns: 1fr; }
+            .header { flex-direction: column; align-items: flex-start; }
+            .metric-value { font-size: 28px; }
+            .container { padding: 12px; }
+        }
+
+        /* Lightbox */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 90vw;
+            max-height: 90vh;
+            object-fit: contain;
+            border-radius: var(--radius-md);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ─── LOGIN SCREEN ─── -->
+    <div id="loginScreen">
+        <div class="login-card">
+            <span class="login-logo">🍞</span>
+            <h1>Sourdough Monitor</h1>
+            <p>Monitoreo de fermentación en tiempo real.<br>Inicia sesión para acceder al dashboard.</p>
+            <button id="googleSignInBtn" onclick="signInWithGoogle()">
+                <!-- Google "G" logo SVG -->
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Continuar con Google
+            </button>
+            <div class="login-footer">Solo usuarios autorizados pueden acceder</div>
+        </div>
+    </div>
+
+    <!-- ─── MAIN APP ─── -->
+    <div id="app">
+        <div class="container">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <span class="logo">🍞</span>
+                    <h1>Sourdough Monitor</h1>
+                </div>
+                <div class="header-right">
+                    <span class="realtime-badge">
+                        <span class="realtime-dot"></span>
+                        Tiempo real
+                    </span>
+                    <div id="statusBadge" class="status-badge inactive">
+                        <span class="status-dot"></span>
+                        <span id="statusText">Cargando...</span>
+                    </div>
+                    <span id="elapsedTimer" class="timer">--:--:--</span>
+                    <div class="user-info">
+                        <img id="userAvatar" class="user-avatar" src="" alt="Avatar" style="display:none">
+                        <span id="userName" class="user-name"></span>
+                        <button id="signOutBtn" onclick="signOut()">Salir</button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Peak Banner -->
+            <div id="peakBanner" class="peak-banner">
+                <span class="peak-icon">🎯</span>
+                <div class="peak-text">
+                    <h3>¡Peak Detectado!</h3>
+                    <p id="peakInfo">Tu masa madre alcanzó su punto máximo</p>
+                </div>
+            </div>
+
+            <!-- Notes Bar -->
+            <div id="notesBar" class="notes-bar" style="display:none">
+                <span class="notes-icon">💬</span>
+                <span id="notesText" class="notes-text"></span>
+            </div>
+
+            <!-- Metrics -->
+            <div class="metrics-row">
+                <div class="card metric-card level">
+                    <div id="levelValue" class="metric-value">--</div>
+                    <div class="metric-label">Nivel</div>
+                    <div id="levelSub" class="metric-sub"></div>
+                </div>
+                <div class="card metric-card bubbles">
+                    <div id="bubblesValue" class="metric-value">--</div>
+                    <div class="metric-label">Burbujas</div>
+                    <div id="bubblesSub" class="metric-sub"></div>
+                </div>
+                <div class="card metric-card texture">
+                    <div id="textureValue" class="metric-value">--</div>
+                    <div class="metric-label">Textura</div>
+                    <div id="textureSub" class="metric-sub"></div>
+                </div>
+                <div class="card metric-card time">
+                    <div id="timeValue" class="metric-value">--</div>
+                    <div class="metric-label">Tiempo</div>
+                    <div id="timeSub" class="metric-sub">transcurrido</div>
+                </div>
+            </div>
+
+            <!-- Charts + Photo -->
+            <div class="charts-grid">
+                <div class="card">
+                    <div class="card-title">📈 Nivel de Fermentación</div>
+                    <div class="chart-container">
+                        <canvas id="levelChart"></canvas>
+                    </div>
+                </div>
+                <div class="card photo-card">
+                    <div class="card-title">📸 Última Captura</div>
+                    <div id="photoFrame" class="photo-frame" onclick="openLightbox()">
+                        <span class="placeholder">📷</span>
+                    </div>
+                    <div id="photoTime" class="photo-time"></div>
+                </div>
+            </div>
+
+            <!-- Activity Chart -->
+            <div class="activity-section">
+                <div class="card">
+                    <div class="card-title">🫧 Actividad de Burbujas</div>
+                    <div class="activity-chart-container">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sessions -->
+            <div class="sessions-section">
+                <div class="card">
+                    <div class="card-title">📅 Sesiones de Fermentación</div>
+                    <div id="sessionsGrid" class="sessions-grid"></div>
+                </div>
+            </div>
+
+            <!-- Photo Gallery -->
+            <div class="gallery-section">
+                <div class="card">
+                    <div class="card-title">🖼️ Galería de Capturas</div>
+                    <div id="galleryGrid" class="gallery-grid"></div>
+                </div>
+            </div>
+
+            <div class="footer">
+                Sourdough Monitor &bull; Firebase Realtime &bull; Google Drive Photos
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+        <img id="lightboxImg" src="" alt="Photo">
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
+        import {
+            getAuth,
+            GoogleAuthProvider,
+            signInWithPopup,
+            signOut as fbSignOut,
+            onAuthStateChanged
+        } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
+        import {
+            getFirestore,
+            collection,
+            query,
+            orderBy,
+            limit,
+            getDocs,
+            doc,
+            onSnapshot,
+            where
+        } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
+
+        // ─── Firebase config ───
+        const firebaseConfig = {
+            apiKey: "AIzaSyCvH1nqbrIeakI5P5AuGTuEgDtL3SV_kNo",
+            authDomain: "sourdough-monitor-app.firebaseapp.com",
+            projectId: "sourdough-monitor-app",
+            storageBucket: "sourdough-monitor-app.firebasestorage.app",
+            messagingSenderId: "231699057388",
+            appId: "1:231699057388:web:7685b1795464dc4cc173c9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Expose auth functions to window
+        window.signInWithGoogle = async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (e) {
+                console.error('Login error:', e);
+                alert('Error al iniciar sesión: ' + e.message);
+            }
+        };
+
+        window.signOut = () => fbSignOut(auth);
+
+        // ─── State ───
+        let currentSessionId = null;
+        let levelChart = null;
+        let activityChart = null;
+        let measurementsUnsubscribe = null;
+        let sessionsUnsubscribe = null;
+        let allMeasurements = [];
+        let timerInterval = null;
+
+        // ─── Auth state ───
+        onAuthStateChanged(auth, user => {
+            const loginScreen = document.getElementById('loginScreen');
+            const appEl = document.getElementById('app');
+
+            if (user) {
+                loginScreen.style.display = 'none';
+                appEl.classList.add('visible');
+
+                // Show user info
+                const avatar = document.getElementById('userAvatar');
+                if (user.photoURL) {
+                    avatar.src = user.photoURL;
+                    avatar.style.display = 'block';
+                }
+                document.getElementById('userName').textContent = user.displayName || user.email;
+
+                initCharts();
+                loadSessions();
+            } else {
+                loginScreen.style.display = 'flex';
+                appEl.classList.remove('visible');
+                if (measurementsUnsubscribe) measurementsUnsubscribe();
+                if (sessionsUnsubscribe) sessionsUnsubscribe();
+            }
+        });
+
+        // ─── Charts ───
+        Chart.defaults.color = '#888';
+        Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+
+        function initCharts() {
+            if (levelChart) return; // already initialized
+
+            const levelCtx = document.getElementById('levelChart').getContext('2d');
+            levelChart = new Chart(levelCtx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Nivel (%)',
+                        data: [],
+                        borderColor: '#e94560',
+                        backgroundColor: 'rgba(233,69,96,0.08)',
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#e94560',
+                        pointBorderColor: '#0c0c24',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 6,
+                    }, {
+                        label: 'Peak',
+                        data: [],
+                        borderColor: 'transparent',
+                        backgroundColor: '#ffd700',
+                        pointRadius: 10,
+                        pointStyle: 'star',
+                        showLine: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(12,12,36,0.95)',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            titleFont: { weight: '600' },
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: ctx => `Nivel: ${ctx.parsed.y?.toFixed(1) ?? '--'}%`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: { unit: 'hour', displayFormats: { hour: 'HH:mm', minute: 'HH:mm' } },
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                            ticks: { maxRotation: 0 }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                            title: { display: true, text: 'Nivel (%)', color: '#666' }
+                        }
+                    }
+                }
+            });
+
+            const actCtx = document.getElementById('activityChart').getContext('2d');
+            activityChart = new Chart(actCtx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Burbujas',
+                        data: [],
+                        borderColor: '#e8a045',
+                        backgroundColor: 'rgba(232,160,69,0.1)',
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#e8a045',
+                        pointBorderColor: '#0c0c24',
+                        pointBorderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(12,12,36,0.95)',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: ctx => {
+                                    const labels = ['Ninguna', 'Pocas', 'Muchas'];
+                                    return `Burbujas: ${labels[ctx.parsed.y] || '--'}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: { unit: 'hour', displayFormats: { hour: 'HH:mm' } },
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                            ticks: { maxRotation: 0 }
+                        },
+                        y: {
+                            min: -0.2, max: 2.5,
+                            ticks: {
+                                stepSize: 1,
+                                callback: v => ['Ninguna', 'Pocas', 'Muchas'][v] || ''
+                            },
+                            grid: { color: 'rgba(255,255,255,0.03)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ─── Load sessions list ───
+        async function loadSessions() {
+            const sessionsRef = collection(db, 'sesiones');
+            const q = query(sessionsRef, orderBy('fecha', 'desc'), limit(20));
+
+            if (sessionsUnsubscribe) sessionsUnsubscribe();
+
+            sessionsUnsubscribe = onSnapshot(q, snapshot => {
+                const sessions = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderSessionChips(sessions);
+
+                // Auto-select: prefer active, else most recent
+                if (!currentSessionId && sessions.length > 0) {
+                    const active = sessions.find(s => s.estado === 'activa');
+                    selectSession((active || sessions[0]).id);
+                }
+            });
+        }
+
+        function renderSessionChips(sessions) {
+            const grid = document.getElementById('sessionsGrid');
+            if (!sessions.length) {
+                grid.innerHTML = '<div style="color: var(--text-muted); font-size: 12px;">No hay sesiones aún — el monitor aún no sincronizó datos.</div>';
+                return;
+            }
+
+            grid.innerHTML = sessions.map(s => {
+                const isActive = s.estado === 'activa';
+                const isCurrent = currentSessionId === s.id;
+                const count = s.num_mediciones || 0;
+                const peak = s.peak_nivel ? `Peak: ${parseFloat(s.peak_nivel).toFixed(0)}%` : '';
+
+                return `<div class="session-chip ${isCurrent ? 'active' : ''}" onclick="window._selectSession('${s.id}')">
+                    <div class="chip-date">
+                        <span class="chip-status ${isActive ? 'live' : 'done'}"></span>
+                        ${s.fecha || 'N/A'}
+                    </div>
+                    <div class="chip-meta">${count} med. ${peak}</div>
+                </div>`;
+            }).join('');
+        }
+
+        // ─── Select a session and subscribe to its measurements ───
+        window._selectSession = (sessionId) => selectSession(sessionId);
+
+        function selectSession(sessionId) {
+            currentSessionId = sessionId;
+
+            // Unsubscribe from previous
+            if (measurementsUnsubscribe) measurementsUnsubscribe();
+
+            // Subscribe to measurements (ordered by timestamp)
+            const medsRef = collection(db, 'sesiones', sessionId, 'mediciones');
+            const q = query(medsRef, orderBy('timestamp', 'asc'));
+
+            measurementsUnsubscribe = onSnapshot(q, snapshot => {
+                allMeasurements = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+                // Also get session doc for metadata
+                onSnapshot(doc(db, 'sesiones', sessionId), sessionDoc => {
+                    if (sessionDoc.exists()) {
+                        updateDashboard({ id: sessionId, ...sessionDoc.data() }, allMeasurements);
+                    }
+                });
+            });
+        }
+
+        // ─── Dashboard rendering ───
+        const bubbleDisplay = {
+            'ninguna': { emoji: '⚪', text: 'Ninguna' },
+            'pocas':   { emoji: '🟡', text: 'Pocas' },
+            'muchas':  { emoji: '🟢', text: 'Muchas' }
+        };
+
+        const textureDisplay = {
+            'lisa':       { emoji: '😴', text: 'Lisa' },
+            'rugosa':     { emoji: '😊', text: 'Rugosa' },
+            'muy_activa': { emoji: '🔥', text: 'Activa' }
+        };
+
+        function updateDashboard(session, measurements) {
+            if (!session) return;
+
+            const latest = measurements.length > 0 ? measurements[measurements.length - 1] : null;
+            const isActive = session.estado === 'activa';
+
+            // Status badge
+            const badge = document.getElementById('statusBadge');
+            badge.className = `status-badge ${isActive ? 'active' : 'inactive'}`;
+            document.getElementById('statusText').textContent = isActive ? 'Monitoreando' : 'Completada';
+
+            // Timer
+            if (isActive && session.hora_inicio) {
+                startTimer(session.hora_inicio);
+            } else {
+                if (timerInterval) clearInterval(timerInterval);
+                document.getElementById('elapsedTimer').textContent =
+                    `${session.num_mediciones || measurements.length} mediciones`;
+            }
+
+            // Metrics
+            if (latest) {
+                const level = latest.nivel_pct;
+                document.getElementById('levelValue').textContent =
+                    level != null ? `${parseFloat(level).toFixed(0)}%` : '--';
+
+                if (measurements.length >= 2) {
+                    const prev = measurements[measurements.length - 2];
+                    if (prev.nivel_pct != null && level != null) {
+                        const diff = parseFloat(level) - parseFloat(prev.nivel_pct);
+                        const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+                        const sub = document.getElementById('levelSub');
+                        sub.textContent = `${arrow} ${diff > 0 ? '+' : ''}${diff.toFixed(1)}%`;
+                        sub.style.color = diff > 0 ? '#4caf50' : diff < 0 ? '#e94560' : '#888';
+                    }
+                }
+
+                const bub = bubbleDisplay[latest.burbujas] || { emoji: '--', text: '--' };
+                document.getElementById('bubblesValue').textContent = bub.emoji;
+                document.getElementById('bubblesSub').textContent = bub.text;
+
+                const tex = textureDisplay[latest.textura] || { emoji: '--', text: '--' };
+                document.getElementById('textureValue').textContent = tex.emoji;
+                document.getElementById('textureSub').textContent = tex.text;
+
+                if (latest.notas) {
+                    document.getElementById('notesBar').style.display = 'flex';
+                    document.getElementById('notesText').textContent = latest.notas;
+                } else {
+                    document.getElementById('notesBar').style.display = 'none';
+                }
+            }
+
+            // Time card
+            if (session.hora_inicio) {
+                const start = new Date(session.hora_inicio);
+                const now = new Date();
+                const hours = ((now - start) / 3600000).toFixed(1);
+                document.getElementById('timeValue').textContent = `${hours}h`;
+                document.getElementById('timeSub').textContent = `${measurements.length} mediciones`;
+            }
+
+            // Peak banner
+            const peakMeasurement = measurements.find(m => m.es_peak === 1 || m.es_peak === true);
+            const peakBanner = document.getElementById('peakBanner');
+            if (peakMeasurement || session.peak_nivel) {
+                peakBanner.classList.add('visible');
+                const peakLevel = peakMeasurement ? peakMeasurement.nivel_pct : session.peak_nivel;
+                const peakTime = peakMeasurement ? peakMeasurement.timestamp : session.peak_timestamp;
+                document.getElementById('peakInfo').textContent =
+                    `Nivel máximo: ${parseFloat(peakLevel).toFixed(0)}% a las ${peakTime ? new Date(peakTime).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : '--'}`;
+            } else {
+                peakBanner.classList.remove('visible');
+            }
+
+            updateCharts(measurements);
+            updateLatestPhoto(latest);
+            updateGallery(measurements);
+        }
+
+        function updateCharts(measurements) {
+            if (!levelChart) return;
+            const valid = measurements.filter(m => m.nivel_pct != null);
+            if (!valid.length) return;
+
+            const bubbleMap = { 'ninguna': 0, 'pocas': 1, 'muchas': 2 };
+
+            levelChart.data.datasets[0].data = valid.map(m => ({
+                x: new Date(m.timestamp), y: parseFloat(m.nivel_pct)
+            }));
+            levelChart.data.datasets[1].data = valid
+                .filter(m => m.es_peak === 1 || m.es_peak === true)
+                .map(m => ({ x: new Date(m.timestamp), y: parseFloat(m.nivel_pct) }));
+            levelChart.update('none');
+
+            activityChart.data.datasets[0].data = measurements.map(m => ({
+                x: new Date(m.timestamp),
+                y: bubbleMap[m.burbujas] ?? 0
+            }));
+            activityChart.update('none');
+        }
+
+        function updateLatestPhoto(latest) {
+            const frame = document.getElementById('photoFrame');
+            const timeEl = document.getElementById('photoTime');
+
+            if (!latest || !latest.foto_url) {
+                frame.innerHTML = '<span class="placeholder">📷</span>';
+                timeEl.textContent = '';
+                return;
+            }
+
+            frame.innerHTML = `<img src="${latest.foto_url}" alt="Latest capture"
+                onerror="this.parentElement.innerHTML='<span class=placeholder>📷</span>'">`;
+
+            if (latest.timestamp) {
+                const t = new Date(latest.timestamp);
+                timeEl.textContent = t.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            }
+        }
+
+        function updateGallery(measurements) {
+            const grid = document.getElementById('galleryGrid');
+            const withPhotos = measurements.filter(m => m.foto_url).slice(-24).reverse();
+
+            if (!withPhotos.length) {
+                grid.innerHTML = '<div style="color: var(--text-muted); font-size: 12px; padding: 20px;">Sin fotos aún</div>';
+                return;
+            }
+
+            grid.innerHTML = withPhotos.map(m => {
+                const t = new Date(m.timestamp);
+                const time = t.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+                const level = m.nivel_pct ? `${parseFloat(m.nivel_pct).toFixed(0)}%` : '';
+                return `<div class="gallery-thumb" onclick="openLightboxSrc('${m.foto_url}')">
+                    <img src="${m.foto_url}" alt="${time}" loading="lazy"
+                         onerror="this.parentElement.style.display='none'">
+                    <div class="gallery-label">
+                        <span class="gl-time">${time}</span>
+                        ${level ? `<span class="gl-level">${level}</span>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // ─── Timer ───
+        function startTimer(startIso) {
+            if (timerInterval) clearInterval(timerInterval);
+            const el = document.getElementById('elapsedTimer');
+            const update = () => {
+                const diff = Math.max(0, new Date() - new Date(startIso));
+                const h = Math.floor(diff / 3600000);
+                const m = Math.floor((diff % 3600000) / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
+                el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            };
+            update();
+            timerInterval = setInterval(update, 1000);
+        }
+
+        // ─── Lightbox ───
+        window.openLightbox = () => {
+            const img = document.querySelector('#photoFrame img');
+            if (img) openLightboxSrc(img.src);
+        };
+
+        window.openLightboxSrc = (src) => {
+            document.getElementById('lightboxImg').src = src;
+            document.getElementById('lightbox').classList.add('open');
+        };
+
+        window.closeLightbox = () => {
+            document.getElementById('lightbox').classList.remove('open');
+        };
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeLightbox();
+        });
+
+    </script>
+</body>
+</html>
