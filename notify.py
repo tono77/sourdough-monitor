@@ -104,7 +104,7 @@ def send_update_email(session, latest_measurement, measurement_count, elapsed_ho
             </a>
 
             <p style="color: #555; font-size: 11px; text-align: center; margin: 16px 0 0 0;">
-                Próximo update en 30 minutos
+                Próximo update en 1 hora · Activo de 07:00 a 23:00
             </p>
         </div>
     </body>

@@ -202,13 +202,15 @@ def main():
 
     # Monitoring mode
     capture_interval = config.get("capture", {}).get("interval_seconds", 300)
-    email_interval = 1800  # 30 minutes
+    schedule = config.get("schedule", {})
+    email_interval = schedule.get("email_interval_seconds", 3600)
     last_email_time = None
 
     log(f"🍞 Sourdough Monitor started")
     log(f"   Capture interval: {capture_interval}s ({capture_interval/60:.0f} min)")
     log(f"   Email interval: {email_interval}s ({email_interval/60:.0f} min)")
-    log(f"   Active hours: {config.get('schedule', {}).get('start_hour', 7)}:{config.get('schedule', {}).get('start_minute', 30):02d} - {config.get('schedule', {}).get('end_hour', 23)}:{config.get('schedule', {}).get('end_minute', 59):02d}")
+    log(f"   Active hours: {schedule.get('start_hour', 7)}:{schedule.get('start_minute', 0):02d} - {schedule.get('end_hour', 23)}:{schedule.get('end_minute', 0):02d} (monitoring + emails)")
+    log(f"   Outside hours: process keeps running, no captures/emails")
 
     while running:
         config = load_config()  # Reload config each cycle
