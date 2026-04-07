@@ -18,8 +18,8 @@
     <dict>
         <key>PATH</key>
         <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
-        <!-- ANTHROPIC_API_KEY: set this in your environment or load from a secrets file -->
-        <!-- Do NOT hardcode secrets here. Use: launchctl setenv ANTHROPIC_API_KEY "your-key" -->
+        <key>ANTHROPIC_API_KEY_FILE</key>
+        <string>/Users/moltbot/Projects/sourdough-monitor/.env</string>
     </dict>
 
     <key>RunAtLoad</key>

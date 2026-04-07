@@ -28,10 +28,21 @@ def load_config():
 
 
 def get_api_key():
-    """Get Anthropic API key from environment or config files."""
+    """Get Anthropic API key from environment, .env file, or config files."""
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if api_key:
         return api_key
+
+    # Check .env file in project root
+    env_file = BASE_DIR / ".env"
+    if env_file.exists():
+        with open(env_file) as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("ANTHROPIC_API_KEY="):
+                    api_key = line.split("=", 1)[1].strip().strip('"').strip("'")
+                    if api_key:
+                        return api_key
 
     # Check openclaw config
     config_paths = [
@@ -46,7 +57,7 @@ def get_api_key():
             if api_key:
                 return api_key
 
-    raise ValueError("No ANTHROPIC_API_KEY found. Set it as environment variable or in ~/.openclaw/config.json")
+    raise ValueError("No ANTHROPIC_API_KEY found. Set it in .env, as environment variable, or in ~/.openclaw/config.json")
 
 
 def compress_image(photo_path, target_size_mb=3):
