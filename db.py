@@ -175,7 +175,7 @@ def save_measurement(conn, session_id, photo_path, analysis):
 
 
 def detect_peak(conn, session_id):
-    """Detect fermentation peak (first descent after maximum)."""
+    """Detect fermentation peak (first descent after meaningful growth from baseline)."""
     rows = conn.execute("""
         SELECT id, nivel_pct, timestamp FROM mediciones
         WHERE sesion_id = ? AND nivel_pct IS NOT NULL
@@ -197,9 +197,28 @@ def detect_peak(conn, session_id):
     if peak_exists:
         return False, None
 
-    # Peak detected: current level dropped below previous
-    if curr[1] < prev[1] and prev[1] > 100:
-        # Mark the previous measurement as peak
+    # Get baseline (first valid measurement of this session)
+    first = conn.execute("""
+        SELECT nivel_pct FROM mediciones
+        WHERE sesion_id = ? AND nivel_pct IS NOT NULL
+        ORDER BY id ASC LIMIT 1
+    """, (session_id,)).fetchone()
+
+    if not first:
+        return False, None
+
+    baseline = first[0]
+
+    # Get the maximum level reached so far in this session
+    max_reached = conn.execute("""
+        SELECT MAX(nivel_pct) FROM mediciones
+        WHERE sesion_id = ? AND nivel_pct IS NOT NULL
+    """, (session_id,)).fetchone()[0] or baseline
+
+    MIN_GROWTH = 10  # must have grown at least 10 raw units from baseline
+
+    # Peak: currently declining AND had meaningful growth from baseline
+    if curr[1] < prev[1] and (max_reached - baseline) >= MIN_GROWTH:
         conn.execute("UPDATE mediciones SET es_peak = 1 WHERE id = ?", (prev[0],))
         conn.execute(
             "UPDATE sesiones SET peak_nivel = ?, peak_timestamp = ? WHERE id = ?",

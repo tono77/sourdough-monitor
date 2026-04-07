@@ -1132,14 +1132,14 @@
                 document.getElementById('timeSub').textContent = `${measurements.length} mediciones`;
             }
 
-            // Peak banner
+            // Peak banner — only show if peak measurement is found in loaded data
+            // AND we have enough data for the normalization to be meaningful
             const peakMeasurement = measurements.find(m => m.es_peak === 1 || m.es_peak === true);
             const peakBanner = document.getElementById('peakBanner');
-            if (peakMeasurement || session.peak_nivel) {
+            if (peakMeasurement && validMeds.length >= 3) {
                 peakBanner.classList.add('visible');
-                const peakRaw = peakMeasurement ? peakMeasurement.nivel_pct : session.peak_nivel;
-                const peakLevel = norm(peakRaw);
-                const peakTime = peakMeasurement ? peakMeasurement.timestamp : session.peak_timestamp;
+                const peakLevel = norm(peakMeasurement.nivel_pct);
+                const peakTime = peakMeasurement.timestamp;
                 document.getElementById('peakInfo').textContent =
                     `Crecimiento máximo: +${peakLevel != null ? peakLevel.toFixed(0) : '--'}% a las ${peakTime ? new Date(peakTime).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : '--'}`;
             } else {
