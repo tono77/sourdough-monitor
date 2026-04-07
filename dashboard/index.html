@@ -499,13 +499,17 @@
         .gallery-section { margin-bottom: 20px; }
 
         .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 8px;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 4px 0 14px;
+            scrollbar-width: thin;
+            scrollbar-color: #333 transparent;
         }
 
         .gallery-thumb {
-            aspect-ratio: 1;
+            flex-shrink: 0;
+            width: 120px;
             border-radius: var(--radius-sm);
             overflow: hidden;
             cursor: pointer;
@@ -522,7 +526,7 @@
 
         .gallery-thumb img {
             width: 100%;
-            height: 100%;
+            height: 150px;
             object-fit: cover;
         }
 
@@ -699,8 +703,9 @@
             <div class="metrics-row">
                 <div class="card metric-card level">
                     <div id="levelValue" class="metric-value">--</div>
-                    <div class="metric-label">Nivel</div>
+                    <div class="metric-label">Crecimiento total</div>
                     <div id="levelSub" class="metric-sub"></div>
+                    <div id="levelVsAnterior" class="metric-sub" style="margin-top:2px;font-size:10px;color:var(--text-muted)">vs anterior</div>
                 </div>
                 <div class="card metric-card bubbles">
                     <div id="bubblesValue" class="metric-value">--</div>
@@ -827,6 +832,7 @@
         let levelChart = null;
         let activityChart = null;
         let measurementsUnsubscribe = null;
+        let sessionDocUnsubscribe = null;
         let sessionsUnsubscribe = null;
         let allMeasurements = [];
         let timerInterval = null;
@@ -853,8 +859,9 @@
             } else {
                 loginScreen.style.display = 'flex';
                 appEl.classList.remove('visible');
-                if (measurementsUnsubscribe) measurementsUnsubscribe();
-                if (sessionsUnsubscribe) sessionsUnsubscribe();
+                if (measurementsUnsubscribe) { measurementsUnsubscribe(); measurementsUnsubscribe = null; }
+                if (sessionDocUnsubscribe)   { sessionDocUnsubscribe();   sessionDocUnsubscribe   = null; }
+                if (sessionsUnsubscribe)     { sessionsUnsubscribe();     sessionsUnsubscribe     = null; }
             }
         });
 
@@ -921,7 +928,9 @@
                         y: {
                             grid: { color: 'rgba(255,255,255,0.03)' },
                             title: { display: true, text: 'Crecimiento desde inicio (%)', color: '#666' },
-                            ticks: { callback: v => `${v >= 0 ? '+' : ''}${v}%` }
+                            ticks: { callback: v => `${v >= 0 ? '+' : ''}${v.toFixed(0)}%` },
+                            suggestedMin: -5,
+                            suggestedMax: 10
                         }
                     }
                 }
@@ -1032,23 +1041,34 @@
         function selectSession(sessionId) {
             currentSessionId = sessionId;
 
-            // Unsubscribe from previous
-            if (measurementsUnsubscribe) measurementsUnsubscribe();
+            // Clean up previous listeners
+            if (measurementsUnsubscribe) { measurementsUnsubscribe(); measurementsUnsubscribe = null; }
+            if (sessionDocUnsubscribe)   { sessionDocUnsubscribe();   sessionDocUnsubscribe   = null; }
 
-            // Subscribe to measurements (ordered by timestamp)
+            // Shared state for this session
+            let localMeasurements = [];
+            let localSession = null;
+
+            const render = () => {
+                if (localSession) updateDashboard(localSession, localMeasurements);
+            };
+
+            // 1. Subscribe to measurements subcollection
             const medsRef = collection(db, 'sesiones', sessionId, 'mediciones');
             const q = query(medsRef, orderBy('timestamp', 'asc'));
-
             measurementsUnsubscribe = onSnapshot(q, snapshot => {
-                allMeasurements = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                localMeasurements = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                allMeasurements = localMeasurements;
+                render();
+            }, err => console.error('Measurements snapshot error:', err));
 
-                // Also get session doc for metadata
-                onSnapshot(doc(db, 'sesiones', sessionId), sessionDoc => {
-                    if (sessionDoc.exists()) {
-                        updateDashboard({ id: sessionId, ...sessionDoc.data() }, allMeasurements);
-                    }
-                });
-            });
+            // 2. Subscribe to session document independently
+            sessionDocUnsubscribe = onSnapshot(doc(db, 'sesiones', sessionId), sessionDoc => {
+                if (sessionDoc.exists()) {
+                    localSession = { id: sessionId, ...sessionDoc.data() };
+                    render();
+                }
+            }, err => console.error('Session doc snapshot error:', err));
         }
 
         // ─── Dashboard rendering ───
@@ -1104,6 +1124,7 @@
                         const sub = document.getElementById('levelSub');
                         sub.textContent = `${arrow} ${diff > 0 ? '+' : ''}${diff.toFixed(1)}%`;
                         sub.style.color = diff > 0 ? '#4caf50' : diff < 0 ? '#e94560' : '#888';
+                        document.getElementById('levelVsAnterior').textContent = 'vs medición anterior';
                     }
                 }
 
@@ -1151,6 +1172,18 @@
             updateGallery(measurements);
         }
 
+        // Moving average to smooth out Claude's measurement noise
+        function movingAverage(data, window = 3) {
+            return data.map((point, i) => {
+                const half = Math.floor(window / 2);
+                const start = Math.max(0, i - half);
+                const end = Math.min(data.length, i + half + 1);
+                const slice = data.slice(start, end);
+                const avg = slice.reduce((s, p) => s + p.y, 0) / slice.length;
+                return { x: point.x, y: avg };
+            });
+        }
+
         function updateCharts(measurements) {
             if (!levelChart) return;
             const valid = measurements.filter(m => m.nivel_pct != null);
@@ -1162,9 +1195,8 @@
 
             const bubbleMap = { 'ninguna': 0, 'pocas': 1, 'muchas': 2 };
 
-            levelChart.data.datasets[0].data = valid.map(m => ({
-                x: new Date(m.timestamp), y: chartNorm(m.nivel_pct)
-            }));
+            const rawPoints = valid.map(m => ({ x: new Date(m.timestamp), y: chartNorm(m.nivel_pct) }));
+            levelChart.data.datasets[0].data = movingAverage(rawPoints, 3);
             levelChart.data.datasets[1].data = valid
                 .filter(m => m.es_peak === 1 || m.es_peak === true)
                 .map(m => ({ x: new Date(m.timestamp), y: chartNorm(m.nivel_pct) }));
@@ -1198,31 +1230,45 @@
 
         function updateGallery(measurements) {
             const grid = document.getElementById('galleryGrid');
-            const withPhotos = measurements.filter(m => m.foto_url).slice(-24).reverse();
+
+            // All measurements with a Drive photo URL
+            const withPhotos = measurements.filter(m => m.foto_url);
 
             if (!withPhotos.length) {
-                grid.innerHTML = '<div style="color: var(--text-muted); font-size: 12px; padding: 20px;">Sin fotos aún</div>';
+                grid.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:20px">Sin fotos aún &mdash; las capturas nuevas aparecerán aquí</div>';
                 return;
             }
 
-            // Compute baseline from all measurements for gallery normalization
-            const galleryValid = measurements.filter(m => m.nivel_pct != null);
-            const galleryBaseline = galleryValid.length > 0 ? parseFloat(galleryValid[0].nivel_pct) : null;
+            // Compute baseline from all measurements
+            const validAll = measurements.filter(m => m.nivel_pct != null);
+            const galleryBaseline = validAll.length > 0 ? parseFloat(validAll[0].nivel_pct) : null;
 
-            grid.innerHTML = withPhotos.map(m => {
+            // Show all photos, newest first
+            const photosDesc = [...withPhotos].reverse();
+
+            grid.innerHTML = photosDesc.map(m => {
                 const t = new Date(m.timestamp);
                 const time = t.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
-                let levelLabel = '';
-                if (m.nivel_pct != null && galleryBaseline != null) {
-                    const normVal = parseFloat(m.nivel_pct) - galleryBaseline;
-                    levelLabel = `${normVal >= 0 ? '+' : ''}${normVal.toFixed(0)}%`;
+
+                // Δ% vs immediately previous measurement (not vs baseline)
+                let deltaLabel = '';
+                const mIdx = measurements.findIndex(x => x.timestamp === m.timestamp);
+                if (mIdx > 0) {
+                    const prevM = measurements[mIdx - 1];
+                    if (prevM.nivel_pct != null && m.nivel_pct != null) {
+                        const delta = parseFloat(m.nivel_pct) - parseFloat(prevM.nivel_pct);
+                        deltaLabel = `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%`;
+                    }
+                } else if (galleryBaseline != null && m.nivel_pct != null) {
+                    deltaLabel = '+0%'; // first measurement is baseline
                 }
+
                 return `<div class="gallery-thumb" onclick="openLightboxSrc('${m.foto_url}')">
                     <img src="${m.foto_url}" alt="${time}" loading="lazy"
                          onerror="this.parentElement.style.display='none'">
                     <div class="gallery-label">
                         <span class="gl-time">${time}</span>
-                        ${levelLabel ? `<span class="gl-level">${levelLabel}</span>` : ''}
+                        ${deltaLabel ? `<span class="gl-level">${deltaLabel}</span>` : ''}
                     </div>
                 </div>`;
             }).join('');
