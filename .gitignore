@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local data (photos, charts, logs, db)
+photos/
+charts/
+data/sourdough.log
+data/daemon.log
+data/*.db
+
+# Temporal
+*.tmp
+/tmp/
