@@ -175,18 +175,20 @@ def save_measurement(conn, session_id, photo_path, analysis):
 
 
 def detect_peak(conn, session_id):
-    """Detect fermentation peak (first descent after meaningful growth from baseline)."""
+    """Detect fermentation peak (first descent after meaningful growth from baseline).
+    Requires 2 consecutive declining readings to avoid triggering on measurement noise."""
     rows = conn.execute("""
         SELECT id, nivel_pct, timestamp FROM mediciones
         WHERE sesion_id = ? AND nivel_pct IS NOT NULL
-        ORDER BY id DESC LIMIT 3
+        ORDER BY id DESC LIMIT 5
     """, (session_id,)).fetchall()
 
-    if len(rows) < 2:
+    if len(rows) < 3:
         return False, None
 
-    curr = rows[0]
-    prev = rows[1]
+    curr  = rows[0]  # latest
+    prev  = rows[1]
+    prev2 = rows[2]  # two readings ago
 
     # Check if peak already detected for this session
     peak_exists = conn.execute(
@@ -215,17 +217,31 @@ def detect_peak(conn, session_id):
         WHERE sesion_id = ? AND nivel_pct IS NOT NULL
     """, (session_id,)).fetchone()[0] or baseline
 
-    MIN_GROWTH = 10  # must have grown at least 10 raw units from baseline
+    MIN_GROWTH  = 10   # must have grown at least 10 raw units from baseline
+    MIN_DECLINE = 3    # each decline step must be at least 3 units (not just noise)
 
-    # Peak: currently declining AND had meaningful growth from baseline
-    if curr[1] < prev[1] and (max_reached - baseline) >= MIN_GROWTH:
-        conn.execute("UPDATE mediciones SET es_peak = 1 WHERE id = ?", (prev[0],))
+    # Peak: TWO consecutive declines of meaningful magnitude AND had real growth from baseline
+    two_consec_declines = (
+        curr[1] < prev[1] and
+        prev[1] < prev2[1] and
+        (prev2[1] - curr[1]) >= MIN_DECLINE
+    )
+
+    if two_consec_declines and (max_reached - baseline) >= MIN_GROWTH:
+        # Mark the actual maximum measurement as the peak (not necessarily prev2)
+        max_row = conn.execute("""
+            SELECT id, nivel_pct, timestamp FROM mediciones
+            WHERE sesion_id = ? AND nivel_pct IS NOT NULL
+            ORDER BY nivel_pct DESC LIMIT 1
+        """, (session_id,)).fetchone()
+
+        conn.execute("UPDATE mediciones SET es_peak = 1 WHERE id = ?", (max_row[0],))
         conn.execute(
             "UPDATE sesiones SET peak_nivel = ?, peak_timestamp = ? WHERE id = ?",
-            (prev[1], prev[2], session_id)
+            (max_row[1], max_row[2], session_id)
         )
         conn.commit()
-        return True, {"nivel": prev[1], "timestamp": prev[2]}
+        return True, {"nivel": max_row[1], "timestamp": max_row[2]}
 
     return False, None
 

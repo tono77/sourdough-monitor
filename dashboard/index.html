@@ -620,19 +620,40 @@
             display: none;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.9);
+            background: rgba(0,0,0,0.95);
             z-index: 1000;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
+            flex-direction: column;
+            gap: 12px;
         }
         .lightbox.open { display: flex; }
         .lightbox img {
-            max-width: 90vw;
-            max-height: 90vh;
+            max-width: 88vw;
+            max-height: 80vh;
             object-fit: contain;
             border-radius: var(--radius-md);
         }
+        .lightbox-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .lb-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            font-size: 28px;
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+        .lb-btn:hover { background: rgba(255,255,255,0.2); }
+        .lb-btn.close-lb { font-size: 18px; position: absolute; top: 16px; right: 16px; }
+        .lb-info { color: rgba(255,255,255,0.7); font-size: 13px; text-align: center; }
+        .lb-count { color: rgba(255,255,255,0.4); font-size: 11px; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -774,8 +795,17 @@
     </div>
 
     <!-- Lightbox -->
-    <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+    <div id="lightbox" class="lightbox">
+        <button class="lb-btn close-lb" onclick="closeLightbox()">✕</button>
         <img id="lightboxImg" src="" alt="Photo">
+        <div class="lightbox-controls">
+            <button class="lb-btn" onclick="lightboxNav(-1)">&#8249;</button>
+            <div style="text-align:center">
+                <div class="lb-info" id="lightboxInfo"></div>
+                <div class="lb-count" id="lightboxCount"></div>
+            </div>
+            <button class="lb-btn" onclick="lightboxNav(1)">&#8250;</button>
+        </div>
     </div>
 
     <!-- Firebase SDK -->
@@ -836,6 +866,8 @@
         let sessionsUnsubscribe = null;
         let allMeasurements = [];
         let timerInterval = null;
+        let lightboxPhotos = [];  // [{url, time, deltaLabel}] ascending
+        let lightboxIndex = 0;
 
         // ─── Auth state ───
         onAuthStateChanged(auth, user => {
@@ -1104,28 +1136,24 @@
                     `${session.num_mediciones || measurements.length} mediciones`;
             }
 
-            // Normalize: first valid measurement = 0%, rest = delta from baseline
-            const validMeds = measurements.filter(m => m.nivel_pct != null);
-            const baselineRaw = validMeds.length > 0 ? parseFloat(validMeds[0].nivel_pct) : null;
-            const norm = (raw) => (raw != null && baselineRaw != null) ? parseFloat(raw) - baselineRaw : null;
+            // ─── Cumulative growth data (median-smooth → running max) ───
+            const gd = buildGrowthData(measurements);
+            const latestValidIdx = gd ? gd.growthArr.length - 1 : -1;
+            const currentGrowth = latestValidIdx >= 0 ? gd.growthArr[latestValidIdx] : null;
+            const prevGrowth    = latestValidIdx >= 1 ? gd.growthArr[latestValidIdx - 1] : null;
 
-            // Metrics
+            // Level metric
             if (latest) {
-                const level = norm(latest.nivel_pct);
                 document.getElementById('levelValue').textContent =
-                    level != null ? `${level >= 0 ? '+' : ''}${level.toFixed(0)}%` : '--';
+                    currentGrowth != null ? `+${currentGrowth.toFixed(0)}%` : '--';
 
-                if (measurements.length >= 2) {
-                    const prev = measurements[measurements.length - 2];
-                    const prevNorm = norm(prev.nivel_pct);
-                    if (prevNorm != null && level != null) {
-                        const diff = level - prevNorm;
-                        const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
-                        const sub = document.getElementById('levelSub');
-                        sub.textContent = `${arrow} ${diff > 0 ? '+' : ''}${diff.toFixed(1)}%`;
-                        sub.style.color = diff > 0 ? '#4caf50' : diff < 0 ? '#e94560' : '#888';
-                        document.getElementById('levelVsAnterior').textContent = 'vs medición anterior';
-                    }
+                if (prevGrowth != null && currentGrowth != null) {
+                    const diff = currentGrowth - prevGrowth; // always ≥ 0 (running max)
+                    const arrow = diff > 0 ? '↑' : '→';
+                    const sub = document.getElementById('levelSub');
+                    sub.textContent = `${arrow} +${diff.toFixed(1)}%`;
+                    sub.style.color = diff > 0 ? '#4caf50' : '#888';
+                    document.getElementById('levelVsAnterior').textContent = 'vs medición anterior';
                 }
 
                 const bub = bubbleDisplay[latest.burbujas] || { emoji: '--', text: '--' };
@@ -1153,53 +1181,82 @@
                 document.getElementById('timeSub').textContent = `${measurements.length} mediciones`;
             }
 
-            // Peak banner — only show if peak measurement is found in loaded data
-            // AND we have enough data for the normalization to be meaningful
-            const peakMeasurement = measurements.find(m => m.es_peak === 1 || m.es_peak === true);
+            // Peak banner — validate using smooth running max
+            // Hide if the fermento kept growing AFTER the detected peak (false peak)
+            const rawPeak = measurements.find(m => m.es_peak === 1 || m.es_peak === true);
+            let confirmedPeak = null;
+            if (rawPeak && gd && gd.validMeds.length >= 5) {
+                const peakIdx = gd.validMeds.findIndex(v => v.timestamp === rawPeak.timestamp);
+                if (peakIdx >= 0) {
+                    const peakGrowth   = gd.growthArr[peakIdx];
+                    const latestGrowth = gd.growthArr[gd.growthArr.length - 1];
+                    // Only confirmed if sourdough didn't grow past the detected peak (within 2%)
+                    if (peakGrowth >= latestGrowth - 2) {
+                        confirmedPeak = { growth: peakGrowth, time: rawPeak.timestamp };
+                    }
+                }
+            }
             const peakBanner = document.getElementById('peakBanner');
-            if (peakMeasurement && validMeds.length >= 3) {
+            if (confirmedPeak) {
                 peakBanner.classList.add('visible');
-                const peakLevel = norm(peakMeasurement.nivel_pct);
-                const peakTime = peakMeasurement.timestamp;
                 document.getElementById('peakInfo').textContent =
-                    `Crecimiento máximo: +${peakLevel != null ? peakLevel.toFixed(0) : '--'}% a las ${peakTime ? new Date(peakTime).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : '--'}`;
+                    `Crecimiento máximo: +${confirmedPeak.growth.toFixed(0)}% a las ${new Date(confirmedPeak.time).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}`;
             } else {
                 peakBanner.classList.remove('visible');
             }
 
-            updateCharts(measurements);
+            updateCharts(measurements, gd);
             updateLatestPhoto(latest);
-            updateGallery(measurements);
+            updateGallery(measurements, gd);
         }
 
-        // Moving average to smooth out Claude's measurement noise
-        function movingAverage(data, window = 3) {
-            return data.map((point, i) => {
+        // ─── Growth data helpers ───
+
+        // Median filter on raw array (removes spike outliers from Claude's noise)
+        function medianSmooth(values, window = 5) {
+            return values.map((v, i) => {
                 const half = Math.floor(window / 2);
                 const start = Math.max(0, i - half);
-                const end = Math.min(data.length, i + half + 1);
-                const slice = data.slice(start, end);
-                const avg = slice.reduce((s, p) => s + p.y, 0) / slice.length;
-                return { x: point.x, y: avg };
+                const end = Math.min(values.length, i + half + 1);
+                const slice = [...values.slice(start, end)].sort((a, b) => a - b);
+                return slice[Math.floor(slice.length / 2)];
             });
         }
 
-        function updateCharts(measurements) {
-            if (!levelChart) return;
-            const valid = measurements.filter(m => m.nivel_pct != null);
-            if (!valid.length) return;
+        // Build smoothed cumulative growth data for display
+        function buildGrowthData(measurements) {
+            const validMeds = measurements.filter(m => m.nivel_pct != null);
+            if (validMeds.length === 0) return null;
+            const baselineRaw = parseFloat(validMeds[0].nivel_pct);
+            // 1. Median smooth to remove noise spikes
+            const rawNiveles = validMeds.map(m => parseFloat(m.nivel_pct));
+            const smoothed = medianSmooth(rawNiveles, 5);
+            // 2. Running max → growth never decreases due to measurement noise
+            let curMax = smoothed[0];
+            const runningMaxArr = smoothed.map(v => { curMax = Math.max(curMax, v); return curMax; });
+            // 3. Growth from baseline (starts at 0%)
+            const growthArr = runningMaxArr.map(rmax => rmax - baselineRaw);
+            return { validMeds, baselineRaw, smoothed, runningMaxArr, growthArr };
+        }
 
-            // Normalize chart values: first = 0, rest = delta from baseline
-            const chartBaseline = parseFloat(valid[0].nivel_pct);
-            const chartNorm = (raw) => parseFloat(raw) - chartBaseline;
-
+        function updateCharts(measurements, gd) {
+            if (!levelChart || !gd) return;
+            const { validMeds, growthArr } = gd;
             const bubbleMap = { 'ninguna': 0, 'pocas': 1, 'muchas': 2 };
 
-            const rawPoints = valid.map(m => ({ x: new Date(m.timestamp), y: chartNorm(m.nivel_pct) }));
-            levelChart.data.datasets[0].data = movingAverage(rawPoints, 3);
-            levelChart.data.datasets[1].data = valid
-                .filter(m => m.es_peak === 1 || m.es_peak === true)
-                .map(m => ({ x: new Date(m.timestamp), y: chartNorm(m.nivel_pct) }));
+            levelChart.data.datasets[0].data = validMeds.map((m, i) => ({
+                x: new Date(m.timestamp), y: growthArr[i]
+            }));
+
+            // Peak marker: only show if it's the actual latest maximum
+            const latestGrowth = growthArr[growthArr.length - 1];
+            levelChart.data.datasets[1].data = validMeds
+                .map((m, i) => ({ m, i }))
+                .filter(({ m, i }) => {
+                    if (!(m.es_peak === 1 || m.es_peak === true)) return false;
+                    return growthArr[i] >= latestGrowth - 2; // only confirmed peaks
+                })
+                .map(({ m, i }) => ({ x: new Date(m.timestamp), y: growthArr[i] }));
             levelChart.update('none');
 
             activityChart.data.datasets[0].data = measurements.map(m => ({
@@ -1228,47 +1285,43 @@
             }
         }
 
-        function updateGallery(measurements) {
+        function updateGallery(measurements, gd) {
             const grid = document.getElementById('galleryGrid');
-
-            // All measurements with a Drive photo URL
             const withPhotos = measurements.filter(m => m.foto_url);
 
             if (!withPhotos.length) {
-                grid.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:20px">Sin fotos aún &mdash; las capturas nuevas aparecerán aquí</div>';
+                grid.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:20px">Sin fotos aún — las capturas nuevas aparecerán aquí</div>';
+                lightboxPhotos = [];
                 return;
             }
 
-            // Compute baseline from all measurements
-            const validAll = measurements.filter(m => m.nivel_pct != null);
-            const galleryBaseline = validAll.length > 0 ? parseFloat(validAll[0].nivel_pct) : null;
-
-            // Show all photos, newest first
-            const photosDesc = [...withPhotos].reverse();
-
-            grid.innerHTML = photosDesc.map(m => {
+            // Build lightbox data (ascending order for nav)
+            lightboxPhotos = withPhotos.map(m => {
                 const t = new Date(m.timestamp);
                 const time = t.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
-
-                // Δ% vs immediately previous measurement (not vs baseline)
                 let deltaLabel = '';
-                const mIdx = measurements.findIndex(x => x.timestamp === m.timestamp);
-                if (mIdx > 0) {
-                    const prevM = measurements[mIdx - 1];
-                    if (prevM.nivel_pct != null && m.nivel_pct != null) {
-                        const delta = parseFloat(m.nivel_pct) - parseFloat(prevM.nivel_pct);
-                        deltaLabel = `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%`;
+                if (gd) {
+                    const mIdx = gd.validMeds.findIndex(v => v.timestamp === m.timestamp);
+                    if (mIdx > 0) {
+                        const delta = gd.growthArr[mIdx] - gd.growthArr[mIdx - 1];
+                        deltaLabel = delta > 0.05 ? `+${delta.toFixed(1)}%` : '+0%';
+                    } else if (mIdx === 0) {
+                        deltaLabel = '+0%';
                     }
-                } else if (galleryBaseline != null && m.nivel_pct != null) {
-                    deltaLabel = '+0%'; // first measurement is baseline
                 }
+                return { url: m.foto_url, time, deltaLabel };
+            });
 
-                return `<div class="gallery-thumb" onclick="openLightboxSrc('${m.foto_url}')">
-                    <img src="${m.foto_url}" alt="${time}" loading="lazy"
+            // Show newest first in the grid
+            const total = lightboxPhotos.length;
+            grid.innerHTML = [...lightboxPhotos].reverse().map((p, descIdx) => {
+                const ascIdx = total - 1 - descIdx;
+                return `<div class="gallery-thumb" onclick="openLightboxAt(${ascIdx})">
+                    <img src="${p.url}" alt="${p.time}" loading="lazy"
                          onerror="this.parentElement.style.display='none'">
                     <div class="gallery-label">
-                        <span class="gl-time">${time}</span>
-                        ${deltaLabel ? `<span class="gl-level">${deltaLabel}</span>` : ''}
+                        <span class="gl-time">${p.time}</span>
+                        ${p.deltaLabel ? `<span class="gl-level">${p.deltaLabel}</span>` : ''}
                     </div>
                 </div>`;
             }).join('');
@@ -1289,15 +1342,34 @@
             timerInterval = setInterval(update, 1000);
         }
 
-        // ─── Lightbox ───
+        // ─── Lightbox with next/prev navigation ───
+        function showCurrentLightbox() {
+            const p = lightboxPhotos[lightboxIndex];
+            if (!p) return;
+            document.getElementById('lightboxImg').src = p.url;
+            document.getElementById('lightboxInfo').textContent = `${p.time}${p.deltaLabel ? ' · ' + p.deltaLabel : ''}`;
+            document.getElementById('lightboxCount').textContent = `${lightboxIndex + 1} / ${lightboxPhotos.length}`;
+        }
+
         window.openLightbox = () => {
-            const img = document.querySelector('#photoFrame img');
-            if (img) openLightboxSrc(img.src);
+            if (lightboxPhotos.length > 0) openLightboxAt(lightboxPhotos.length - 1);
+        };
+
+        window.openLightboxAt = (idx) => {
+            lightboxIndex = Math.max(0, Math.min(idx, lightboxPhotos.length - 1));
+            showCurrentLightbox();
+            document.getElementById('lightbox').classList.add('open');
         };
 
         window.openLightboxSrc = (src) => {
-            document.getElementById('lightboxImg').src = src;
-            document.getElementById('lightbox').classList.add('open');
+            const idx = lightboxPhotos.findIndex(p => p.url === src);
+            openLightboxAt(idx >= 0 ? idx : 0);
+        };
+
+        window.lightboxNav = (dir) => {
+            if (!lightboxPhotos.length) return;
+            lightboxIndex = (lightboxIndex + dir + lightboxPhotos.length) % lightboxPhotos.length;
+            showCurrentLightbox();
         };
 
         window.closeLightbox = () => {
@@ -1305,7 +1377,11 @@
         };
 
         document.addEventListener('keydown', e => {
-            if (e.key === 'Escape') closeLightbox();
+            const lb = document.getElementById('lightbox');
+            if (!lb.classList.contains('open')) return;
+            if (e.key === 'Escape')      closeLightbox();
+            else if (e.key === 'ArrowRight') lightboxNav(1);
+            else if (e.key === 'ArrowLeft')  lightboxNav(-1);
         });
 
     </script>
