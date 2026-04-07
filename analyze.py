@@ -135,27 +135,31 @@ def analyze_photo(photo_path, baseline_foto_path=None, baseline_nivel=None, tiem
 
         prompt = f"""Eres un experto en análisis visual de fermentación de masa madre.
 
-Se te muestran DOS fotos del MISMO frasco de fermento:
-- IMAGEN 1 (primera): Foto INICIAL del día. El fermento está en su nivel de partida.
-- IMAGEN 2 (segunda): Foto ACTUAL{tiempo_txt}.
+Se te muestran DOS fotos del MISMO frasco{tiempo_txt}:
+- IMAGEN 1: Foto INICIAL del día. La BANDA DE GOMA (o cinta) marca el nivel inicial del fermento.
+- IMAGEN 2: Foto ACTUAL.
 
-Tu tarea:
-1. Identifica la MARCA DE REFERENCIA en el frasco (cinta adhesiva, marcador, banda de goma)
-2. Compara la altura de la superficie visible del fermento entre ambas fotos
-3. Estima cuánto ha crecido el fermento: 100=igual al inicio, 150=creció 50% más
-4. Asigna tu nivel de confianza en la medición
+MÉTODO DE MEDICIÓN (sigue exactamente):
+1. En cada foto, estima la altura de la SUPERFICIE del fermento como % del frasco visible.
+   - 0% = fondo del frasco, 100% = tope/borde superior del frasco
+   - Ejemplo: si la masa llega a 3/4 del frasco → 75%
+2. Llama A = altura en foto 1 (inicial), B = altura en foto 2 (actual)
+3. nivel_pct = round(B / A * 100)
+   - Sin cambio (B=A): nivel_pct = 100
+   - Fermento en foto1 al 40%, ahora al 80% → nivel_pct = 200 (se duplicó)
+   - Fermento en foto1 al 40%, ahora al 60% → nivel_pct = 150 (creció 50%)
 
-Responde SOLO con JSON válido, sin texto adicional:
+Responde SOLO con JSON válido:
 {{
-  "nivel_pct": <número: 100=igual a inicio, 120=creció 20%, etc. Usa null si no puedes comparar>,
+  "nivel_pct": <resultado de round(B/A*100), o null si no puedes medir>,
+  "altura_inicial_pct": <A: % de frasco lleno en foto 1>,
+  "altura_actual_pct": <B: % de frasco lleno en foto 2>,
   "burbujas": "<ninguna|pocas|muchas>",
   "textura": "<lisa|rugosa|muy_activa>",
-  "notas": "<observación breve en español, máx 100 chars>",
-  "visible_marca": <true|false, si se ve la marca de referencia en la imagen actual>,
-  "confianza": <1-5; 5=marca visible y comparación clara, 3=estimación razonable, 1=no pude ver bien>
-}}
-
-Regla: nivel_pct >= 100 salvo que el fermento claramente haya bajado del nivel inicial."""
+  "notas": "<observación en español, máx 100 chars>",
+  "visible_marca": <true|false, si ves la banda/cinta en foto 2>,
+  "confianza": <1-5; 5=medición muy precisa, 3=estimada, 1=imágenes poco claras>
+}}"""
 
         content = [
             {"type": "image", "source": {"type": "base64", "media_type": baseline_media, "data": baseline_b64}},
@@ -164,24 +168,28 @@ Regla: nivel_pct >= 100 salvo que el fermento claramente haya bajado del nivel i
         ]
 
     else:
-        # Single-photo fallback (first measurement of a session, or no baseline photo)
-        baseline_txt = f"\nEl nivel inicial fue {baseline_nivel:.0f}% del frasco." if baseline_nivel else ""
-
+        # Single-photo mode (first measurement of a session, or no baseline photo available)
         prompt = f"""Eres un analizador experto de masa madre (sourdough starter).
-Analiza esta foto del frasco de fermento y responde SOLO con JSON válido.
-{baseline_txt}
-Busca:
-1. La MARCA DE REFERENCIA en el frasco (cinta adhesiva, marcador, banda de goma) = nivel 100%
-2. La superficie actual visible del fermento
+Analiza esta foto del frasco de fermento.
 
-Responde con JSON:
+MÉTODO DE MEDICIÓN:
+1. Encuentra la BANDA DE GOMA (o cinta adhesiva) en el frasco — esa es la marca de inicio del fermento
+2. Estima la altura actual de la SUPERFICIE del fermento como % del frasco visible (0%=fondo, 100%=tope)
+3. Estima la altura de la BANDA como % del frasco visible
+4. nivel_pct = round(altura_actual / altura_banda * 100)
+
+Ejemplo: banda al 40% del frasco, fermento ahora al 60% → nivel_pct = round(60/40*100) = 150
+
+Responde SOLO con JSON válido:
 {{
-  "nivel_pct": <número 0-200, donde 100=nivel de la marca, 150=creció 50% sobre la marca>,
+  "nivel_pct": <resultado de round(altura_actual/altura_banda*100), null si no puedes medir>,
+  "altura_inicial_pct": <% del frasco donde está la banda/cinta>,
+  "altura_actual_pct": <% del frasco donde está la superficie actual del fermento>,
   "burbujas": "<ninguna|pocas|muchas>",
   "textura": "<lisa|rugosa|muy_activa>",
-  "notas": "<observación breve en español, máx 100 chars>",
+  "notas": "<observación en español, máx 100 chars>",
   "visible_marca": <true|false>,
-  "confianza": <1-5; 5=marca visible y medición clara, 1=imagen poco clara>
+  "confianza": <1-5; 5=banda visible y medición precisa, 1=imagen poco clara>
 }}
 Si no puedes ver el frasco, usa nivel_pct: null y confianza: 1."""
 

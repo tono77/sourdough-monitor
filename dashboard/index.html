@@ -1296,19 +1296,27 @@
             }
 
             // Build lightbox data (ascending order for nav)
-            lightboxPhotos = withPhotos.map(m => {
+            lightboxPhotos = withPhotos.map((m, idx) => {
                 const t = new Date(m.timestamp);
                 const time = t.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
                 let deltaLabel = '';
-                if (gd) {
-                    const mIdx = gd.validMeds.findIndex(v => v.timestamp === m.timestamp);
-                    if (mIdx > 0) {
-                        const delta = gd.growthArr[mIdx] - gd.growthArr[mIdx - 1];
-                        deltaLabel = delta > 0.05 ? `+${delta.toFixed(1)}%` : '+0%';
-                    } else if (mIdx === 0) {
-                        deltaLabel = '+0%';
+
+                if (idx === 0) {
+                    // First photo = baseline, no previous to compare
+                    deltaLabel = '+0%';
+                } else {
+                    // Scan backwards for the nearest previous photo with nivel_pct
+                    let prevIdx = idx - 1;
+                    while (prevIdx >= 0 && withPhotos[prevIdx].nivel_pct == null) prevIdx--;
+                    const prev = prevIdx >= 0 ? withPhotos[prevIdx] : null;
+
+                    if (prev && m.nivel_pct != null) {
+                        const delta = parseFloat(m.nivel_pct) - parseFloat(prev.nivel_pct);
+                        // Clamp negatives to +0% (brief dips are noise, not real shrinkage)
+                        deltaLabel = delta > 0.5 ? `+${delta.toFixed(1)}%` : '+0%';
                     }
                 }
+
                 return { url: m.foto_url, time, deltaLabel };
             });
 
