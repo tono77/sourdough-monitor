@@ -1,0 +1,32 @@
+[
+  {
+    "modo_analisis": "single",
+    "timestamp": "2026-04-09T10:08:51.012390",
+    "foto_drive_id": "1LFlz-8HOFy8liyVmOitU8hZgfHfGiO-O",
+    "notas": "Medici\u00f3n corregida manualmente",
+    "altura_y_pct": 0,
+    "es_peak": 0,
+    "nivel_px": null,
+    "foto_url": "https://drive.google.com/thumbnail?id=1LFlz-8HOFy8liyVmOitU8hZgfHfGiO-O&sz=w800",
+    "textura": "rugosa",
+    "burbujas": "pocas",
+    "is_manual_override": true,
+    "nivel_pct": 80,
+    "confianza": 3
+  },
+  {
+    "modo_analisis": "single",
+    "timestamp": "2026-04-09T11:33:20.769593",
+    "foto_drive_id": "1ipZ-wt-VTqfIm06O9jZiJi58gTC9_1B6",
+    "notas": "Medici\u00f3n corregida manualmente",
+    "altura_y_pct": 0,
+    "es_peak": 0,
+    "nivel_px": null,
+    "foto_url": "https://drive.google.com/thumbnail?id=1ipZ-wt-VTqfIm06O9jZiJi58gTC9_1B6&sz=w800",
+    "textura": "rugosa",
+    "burbujas": "pocas",
+    "is_manual_override": true,
+    "nivel_pct": 90,
+    "confianza": 3
+  }
+]

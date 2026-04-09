@@ -206,6 +206,61 @@ def upload_photo_to_drive(photo_path):
         return None
 
 
+def delete_drive_file(file_id):
+    """Delete a file from Google Drive silently."""
+    global _drive_service
+    if _drive_service is None or not file_id:
+        return
+    try:
+        _drive_service.files().delete(fileId=file_id).execute()
+    except Exception:
+        pass
+
+def upload_video_to_drive(video_path, old_file_id=None):
+    """Uploads the MP4 to Google Drive, returning the viewable link. Deletes old one if exists."""
+    global _drive_service, _drive_folder_id
+    if _drive_service is None:
+        if init_gdrive() is None:
+            return None
+
+    video_path = Path(video_path)
+    if not video_path.exists():
+        return None
+
+    if old_file_id:
+        delete_drive_file(old_file_id)
+
+    try:
+        file_metadata = {
+            "name": video_path.name,
+            "parents": [_drive_folder_id]
+        }
+        media = MediaFileUpload(str(video_path), mimetype='video/mp4', resumable=True)
+
+        file = _drive_service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields="id, webContentLink, webViewLink"
+        ).execute()
+
+        file_id = file["id"]
+
+        # Make file viewable by anyone with link
+        _drive_service.permissions().create(
+            fileId=file_id,
+            body={"type": "anyone", "role": "reader"}
+        ).execute()
+
+        return {
+            "file_id": file_id,
+            "url": file.get("webContentLink"), # Direct download link
+            "preview_url": file.get("webViewLink") # Google player link
+        }
+    except Exception as e:
+        print(f"⚠️ Drive API Video Error: {e}")
+        return None
+
+
 def sync_session(session_data):
     """Sync session data to Firestore."""
     global _firestore_db
@@ -227,6 +282,11 @@ def sync_session(session_data):
             "peak_nivel": session_data.get("peak_nivel"),
             "peak_timestamp": session_data.get("peak_timestamp"),
             "notas": session_data.get("notas"),
+            "fondo_y_pct": session_data.get("fondo_y_pct"),
+            "tope_y_pct": session_data.get("tope_y_pct"),
+            "is_calibrated": session_data.get("is_calibrated", 0),
+            "timelapse_url": session_data.get("timelapse_url"),
+            "timelapse_file_id": session_data.get("timelapse_file_id"),
             "updated_at": firestore.SERVER_TIMESTAMP,
         }
 
@@ -237,6 +297,48 @@ def sync_session(session_data):
         print(f"⚠️  Firestore session sync error: {e}")
         return False
 
+
+def pull_calibration(session_id):
+    """Retrieve calibration info from Firestore for a given session."""
+    global _firestore_db
+    if _firestore_db is None:
+        if init_firebase() is None:
+            return None
+    try:
+        doc_ref = _firestore_db.collection("sesiones").document(str(session_id))
+        doc = doc_ref.get()
+        if doc.exists:
+            data = doc.to_dict()
+            if data.get("is_calibrated") == 1:
+                return {
+                    "fondo_y_pct": data.get("fondo_y_pct"),
+                    "tope_y_pct": data.get("tope_y_pct")
+                }
+    except Exception as e:
+        print(f"⚠️  Firestore pull calibration error: {e}")
+    return None
+
+
+def pull_corrections(session_id):
+    """Fetch any user-corrected measurements from Firestore."""
+    global _firestore_db
+    if _firestore_db is None:
+        if init_firebase() is None:
+            return []
+    try:
+        meds_ref = _firestore_db.collection("sesiones").document(str(session_id)).collection("mediciones")
+        query = meds_ref.where("is_manual_override", "==", True)
+        docs = query.get()
+        corrections = []
+        for d in docs:
+            data = d.to_dict()
+            corrections.append(data)
+        
+        # Sort by timestamp ascending
+        return sorted(corrections, key=lambda x: x.get("timestamp", ""))
+    except Exception as e:
+        print(f"⚠️  Firestore pull corrections error: {e}")
+        return []
 
 def sync_measurement(session_id, measurement_data, photo_drive_info=None):
     """Sync a measurement to Firestore (as subcollection of session)."""
@@ -267,6 +369,9 @@ def sync_measurement(session_id, measurement_data, photo_drive_info=None):
             "textura": measurement_data.get("textura", ""),
             "notas": measurement_data.get("notas", ""),
             "es_peak": measurement_data.get("es_peak", 0),
+            "altura_y_pct": measurement_data.get("altura_y_pct"),
+            "confianza": measurement_data.get("confianza"),
+            "modo_analisis": measurement_data.get("modo_analisis", "single"),
         }
 
         # Add photo URL from Drive if available

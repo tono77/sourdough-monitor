@@ -4,3 +4,4 @@ firebase-admin>=6.5
 google-api-python-client>=2.120
 google-auth-oauthlib>=1.2
 google-auth-httplib2>=0.2
+ollama

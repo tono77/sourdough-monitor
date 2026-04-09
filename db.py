@@ -35,7 +35,12 @@ def init_db():
             num_mediciones INTEGER DEFAULT 0,
             peak_nivel REAL,
             peak_timestamp TEXT,
-            notas TEXT
+            notas TEXT,
+            fondo_y_pct REAL,
+            tope_y_pct REAL,
+            is_calibrated INTEGER DEFAULT 0,
+            timelapse_url TEXT,
+            timelapse_file_id TEXT
         );
 
         CREATE TABLE IF NOT EXISTS mediciones (
@@ -50,7 +55,8 @@ def init_db():
             notas TEXT,
             es_peak INTEGER DEFAULT 0,
             confianza INTEGER DEFAULT NULL,
-            modo_analisis TEXT DEFAULT NULL
+            modo_analisis TEXT DEFAULT NULL,
+            altura_y_pct REAL DEFAULT NULL
         );
     """)
     conn.commit()
@@ -68,9 +74,22 @@ def init_db():
     for col_def in [
         ("confianza",     "ALTER TABLE mediciones ADD COLUMN confianza INTEGER DEFAULT NULL"),
         ("modo_analisis", "ALTER TABLE mediciones ADD COLUMN modo_analisis TEXT DEFAULT NULL"),
+        ("altura_y_pct",  "ALTER TABLE mediciones ADD COLUMN altura_y_pct REAL DEFAULT NULL"),
     ]:
         if col_def[0] not in existing_cols:
             conn.execute(col_def[1])
+
+    # Migrate: add calibration columns to sesiones
+    cursor = conn.execute("PRAGMA table_info(sesiones)")
+    existing_ses_cols = {row[1] for row in cursor.fetchall()}
+    for col_def in [
+        ("fondo_y_pct",   "ALTER TABLE sesiones ADD COLUMN fondo_y_pct REAL DEFAULT NULL"),
+        ("tope_y_pct",    "ALTER TABLE sesiones ADD COLUMN tope_y_pct REAL DEFAULT NULL"),
+        ("is_calibrated", "ALTER TABLE sesiones ADD COLUMN is_calibrated INTEGER DEFAULT 0"),
+    ]:
+        if col_def[0] not in existing_ses_cols:
+            conn.execute(col_def[1])
+            
     conn.commit()
 
     return conn
@@ -163,31 +182,60 @@ def close_session(conn, session_id):
 
 
 def save_measurement(conn, session_id, photo_path, analysis):
-    """Save a new measurement to the database."""
+    """Save a new measurement to the database.
+    Computes nivel_pct if the session is calibrated."""
     timestamp = datetime.now().isoformat()
+    
+    # Check if session is calibrated to compute calibrated capacity (0-100)
+    ses = conn.execute("SELECT fondo_y_pct, tope_y_pct, is_calibrated FROM sesiones WHERE id = ?", (session_id,)).fetchone()
+    altura = analysis.get("altura_y_pct")
+    if altura is None:
+        altura = analysis.get("altura_actual_pct")
+    nivel_pct = analysis.get("nivel_pct")
+    
+    if ses and ses[2] == 1 and altura is not None and ses[0] is not None and ses[1] is not None:
+        fondo = ses[0]
+        tope = ses[1]
+        # Calculate bound: (altura - fondo) / (tope - fondo) 
+        # Note: top is smaller Y in image coordinates typically (0 is top of image).
+        # We need to map so that if altura = fondo -> 0%, if altura = tope -> 100%
+        # Usually from Claude an Y=0 is bottom and 100 is top if they said "0%=fondo, 100%=tope"
+        # Let's assume standard math (altura - fondo) / (tope - fondo) * 100.
+        if tope != fondo:
+            val = (altura - fondo) / (tope - fondo) * 100
+            nivel_pct = round(max(0, min(150, val)), 1)
+        
     conn.execute("""
         INSERT INTO mediciones
-            (sesion_id, timestamp, foto_path, nivel_pct, nivel_px, burbujas, textura, notas, confianza, modo_analisis)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (sesion_id, timestamp, foto_path, nivel_pct, nivel_px, burbujas, textura, notas, confianza, modo_analisis, altura_y_pct)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         session_id,
         timestamp,
         str(photo_path),
-        analysis.get("nivel_pct"),
+        nivel_pct,
         analysis.get("nivel_px"),
         analysis.get("burbujas"),
         analysis.get("textura"),
         analysis.get("notas"),
         analysis.get("confianza"),
-        analysis.get("_modo", "single")
+        analysis.get("_modo", "single"),
+        altura
     ))
-    # Update session measurement count
     conn.execute(
         "UPDATE sesiones SET num_mediciones = num_mediciones + 1 WHERE id = ?",
         (session_id,)
     )
     conn.commit()
-    return timestamp
+    
+    # Return the full constructed measurement for sync
+    return {
+        "timestamp": timestamp,
+        **analysis,
+        "nivel_pct": nivel_pct,
+        "altura_y_pct": altura,
+        "foto_path": str(photo_path)
+    }
 
 
 def get_baseline_foto(conn, session_id):

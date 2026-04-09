@@ -100,15 +100,10 @@ def detect_media_type(photo_path):
 
 
 def analyze_photo(photo_path, baseline_foto_path=None, baseline_nivel=None, tiempo_min=None):
-    """Send photo to Claude and extract fermentation metrics.
-
-    If baseline_foto_path is provided (comparative mode), Claude receives BOTH the baseline
-    photo and the current photo and estimates RELATIVE growth — much more accurate than
-    single-photo absolute estimation.
-    """
+    """Send photo to Claude API and extract fermentation metrics."""
     api_key = get_api_key()
     config = load_config()
-    model = config.get("claude", {}).get("model", "claude-haiku-4-5")
+    model = config.get("claude", {}).get("model", "claude-3-haiku-20240307")
 
     # Prepare current photo
     photo_to_encode = str(photo_path)
@@ -161,17 +156,34 @@ Responde SOLO con JSON válido:
   "confianza": <1-5; 5=medición muy precisa, 3=estimada, 1=imágenes poco claras>
 }}"""
 
+    # In-Context Learning (Few Shot): Read corrections if any
+    corrections_context = ""
+    try:
+        corr_file = Path("data/dataset_corrections.json")
+        if corr_file.exists():
+            with open(corr_file, "r") as f:
+                corrections = json.load(f)
+            if corrections:
+                # Get up to 3 most recent corrections
+                recent = corrections[-3:]
+                corrections_context = "HISTORIAL DE CORRECCIONES MANUALES RECIENTES DEL USUARIO:\n"
+                for c in recent:
+                    corrections_context += f"- A las {c.get('timestamp','').split('T')[-1][:5]}, el usuario reportó que el nivel real de crecimiento era: {c.get('nivel_pct')}%.\n"
+                corrections_context += "\nUtiliza esta escala como referencia absoluta para la foto de ahora.\n\n"
+    except Exception as e:
+        pass
+
+    if use_comparative:
         content = [
             {"type": "image", "source": {"type": "base64", "media_type": baseline_media, "data": baseline_b64}},
-            {"type": "image", "source": {"type": "base64", "media_type": current_media,  "data": current_b64}},
+            {"type": "image", "source": {"type": "base64", "media_type": current_media, "data": current_b64}},
             {"type": "text", "text": prompt}
         ]
-
     else:
-        # Single-photo mode (first measurement of a session, or no baseline photo available)
+        # Single-photo mode
         prompt = f"""Eres un analizador experto de masa madre (sourdough starter).
 Analiza esta foto del frasco de fermento.
-
+{corrections_context}
 MÉTODO DE MEDICIÓN:
 1. Encuentra la BANDA DE GOMA (o cinta adhesiva) en el frasco — esa es la marca de inicio del fermento
 2. Estima la altura actual de la SUPERFICIE del fermento como % del frasco visible (0%=fondo, 100%=tope)
@@ -192,11 +204,13 @@ Responde SOLO con JSON válido:
   "confianza": <1-5; 5=banda visible y medición precisa, 1=imagen poco clara>
 }}
 Si no puedes ver el frasco, usa nivel_pct: null y confianza: 1."""
-
         content = [
             {"type": "image", "source": {"type": "base64", "media_type": current_media, "data": current_b64}},
             {"type": "text", "text": prompt}
         ]
+
+    config = load_config()
+    model = config.get("claude", {}).get("model", "claude-3-haiku-20240307")
 
     response = requests.post(
         "https://api.anthropic.com/v1/messages",
@@ -207,10 +221,13 @@ Si no puedes ver el frasco, usa nivel_pct: null y confianza: 1."""
         },
         json={
             "model": model,
-            "max_tokens": 400,
-            "messages": [{"role": "user", "content": content}]
+            "max_tokens": 300,
+            "messages": [{
+                "role": "user",
+                "content": content
+            }]
         },
-        timeout=45
+        timeout=30
     )
 
     result = response.json()
@@ -218,6 +235,8 @@ Si no puedes ver el frasco, usa nivel_pct: null y confianza: 1."""
         raise ValueError(f"Claude API error: {result['error']['message']}")
 
     text = result["content"][0]["text"].strip()
+
+
 
     # Extract JSON from response
     match = re.search(r'\{.*\}', text, re.DOTALL)

@@ -14,14 +14,17 @@ import json
 import time
 import signal
 import threading
+import subprocess
 from pathlib import Path
 from datetime import datetime, timedelta
 
 BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
 
+import db
 from db import init_db, get_or_create_session, close_session, save_measurement, detect_peak, migrate_historical_data, get_latest_measurement, get_session_measurements, get_baseline_foto
 from analyze import analyze_photo, capture_photo
+import timelapse
 from chart import load_session_data, make_chart
 from notify import send_update_email, send_peak_alert
 from dashboard import run_server
@@ -89,108 +92,146 @@ def seconds_until_start(config):
     return (next_start - now).total_seconds()
 
 
+def flash_screen():
+    """Produce a 'soft flash' by turning on the screen and opening a blank white page."""
+    try:
+        # Wake display
+        subprocess.run(["caffeinate", "-u", "-t", "2"], check=False)
+        # Create a blank white HTML file
+        flash_file = Path("data/flash.html").resolve()
+        with open(flash_file, "w") as f:
+            f.write("<html><body style='background-color:white; margin:0;'></body></html>")
+        # Open in Safari to bounce light
+        subprocess.run(["open", "-a", "Safari", str(flash_file)], check=False)
+        time.sleep(1.5) # Wait for Safari to render the white page
+    except Exception as e:
+        log(f"⚠️ Soft flash warning: {e}")
+
+def restore_screen():
+    """Close the blank white page."""
+    try:
+        subprocess.run(["osascript", "-e", 'tell application "Safari" to close front window'], check=False)
+    except Exception:
+        pass
+
+
 def run_cycle(conn, session):
-    """Run one capture + analyze + chart cycle."""
+    """Run a single capture and analyze cycle."""
     session_id = session["id"]
+    analysis = None
+    uploaded_photo = None
+
+    # 0. Soft Flash for night captures
+    flash_screen()
 
     # 1. Capture photo
     photo_path = capture_photo()
+    
+    # 0.5 Restore screen
+    restore_screen()
+
     if not photo_path:
         log("⚠️ Capture failed, skipping cycle")
         return None
 
-    # 2. Get baseline measurement info for comparative analysis
-    baseline = conn.execute(
-        "SELECT nivel_pct FROM mediciones WHERE sesion_id = ? AND nivel_pct IS NOT NULL ORDER BY id LIMIT 1",
+    path_obj = Path(photo_path)
+    log(f"✅  Foto: {path_obj.name}")
+
+    # Upload to Drive in background
+    uploaded_photo = None
+    if FIREBASE_ENABLED:
+        uploaded_photo = fb_sync.upload_photo_to_drive(photo_path)
+        if uploaded_photo:
+            log(f"📤 Photo uploaded to Drive: {path_obj.name}")
+
+    # 2. Extract baseline
+    baseline_row = conn.execute(
+        "SELECT nivel_pct FROM mediciones WHERE sesion_id = ? AND nivel_pct IS NOT NULL ORDER BY id ASC LIMIT 1",
         (session_id,)
     ).fetchone()
-    baseline_nivel = baseline[0] if baseline else None
+    baseline_nivel = float(baseline_row[0]) if baseline_row else None
     baseline_foto = get_baseline_foto(conn, session_id)  # path to first photo of session
+
+    # 2b. Pull calibration bounds and user corrections from Firestore
+    corrections_file = Path("data/dataset_corrections.json")
+    if FIREBASE_ENABLED:
+        try:
+            calib = fb_sync.pull_calibration(session_id)
+            if calib:
+                conn.execute(
+                    "UPDATE sesiones SET fondo_y_pct = ?, tope_y_pct = ?, is_calibrated = 1 WHERE id = ?",
+                    (calib["fondo_y_pct"], calib["tope_y_pct"], session_id)
+                )
+                conn.commit()
+                log(f"📐 Calibración sincronizada: fondo={calib['fondo_y_pct']:.1f}%, tope={calib['tope_y_pct']:.1f}%")
+            
+            # Pull user corrections (Few-shot learning examples)
+            corrections = fb_sync.pull_corrections(session_id)
+            if corrections:
+                import json
+                corrections_file.parent.mkdir(exist_ok=True)
+                with open(corrections_file, "w") as f:
+                    json.dump(corrections, f, indent=2)
+                log(f"🧠 {len(corrections)} correcciones manuales cargadas para In-Context Learning.")
+        except Exception as e:
+            log(f"⚠️ Failed to pull firebase data: {e}")
 
     # Compute elapsed time since first measurement
     first_ts = conn.execute(
-        "SELECT timestamp FROM mediciones WHERE sesion_id = ? ORDER BY id LIMIT 1",
+        "SELECT MIN(timestamp) FROM mediciones WHERE sesion_id = ?",
         (session_id,)
-    ).fetchone()
-    tiempo_min = None
-    if first_ts:
-        from datetime import datetime as _dt
-        try:
-            inicio = _dt.fromisoformat(first_ts[0])
-            tiempo_min = (_dt.now() - inicio).total_seconds() / 60
-        except Exception:
-            pass
-
-    # 3. Analyze with Claude (comparative mode if baseline photo exists)
+    ).fetchone()[0]
+    
+    # 3. Analyze image
+    log("🤖  Enviando foto a motor IA local...")
     try:
-        analysis = analyze_photo(
-            photo_path,
-            baseline_foto_path=baseline_foto,
-            baseline_nivel=baseline_nivel,
-            tiempo_min=tiempo_min
+        analysis = analyze_photo(photo_path, baseline_foto)
+        log("\n📊  Resultado Motor Local:")
+        log(json.dumps(analysis, indent=4))
+        
+        # 4. Save to DB
+        measurement = db.save_measurement(
+            conn, session_id, photo_path, analysis
         )
-        modo = analysis.get('_modo', 'single')
-        confianza = analysis.get('confianza', '?')
-        log(f"📊 [{modo}] Confianza:{confianza}/5 | Level:{analysis.get('nivel_pct')}% | Bubbles:{analysis.get('burbujas')} | {analysis.get('notas')}")
+        if measurement:
+            if FIREBASE_ENABLED:
+                fb_sync.sync_measurement(session_id, measurement, uploaded_photo)
+                
+            # Render static chart
+            log("📈  Generando gráfico actualizado...")
+            try:
+                make_chart(load_session_data(conn, session_id), session_info=session)
+            except Exception as e:
+                log(f"⚠️ Chart error: {e}")
+            
+            # --- 5. Timelapse Generation ---
+            log("🎬  Generando MP4 Timelapse...")
+            mp4_path = timelapse.generate_timelapse(session_id, conn)
+            if mp4_path and FIREBASE_ENABLED:
+                # Retrieve current session to check for old timelapse file ID
+                curr_session = session
+                old_file_id = curr_session.get("timelapse_file_id") if curr_session else None
+                
+                vid_data = fb_sync.upload_video_to_drive(mp4_path, old_file_id)
+                if vid_data:
+                    # Update local DB
+                    conn.execute("UPDATE sesiones SET timelapse_url = ?, timelapse_file_id = ? WHERE id = ?",
+                                 (vid_data["url"], vid_data["file_id"], session_id))
+                    conn.commit()
+                    # Sync to Firebase
+                    fb_sync.sync_session(dict(curr_session, timelapse_url=vid_data["url"], timelapse_file_id=vid_data["file_id"]))
+                    log(f"🎬 Timelapse MP4 subido a Drive! ({vid_data['url']})")
+
+            # Check peak
+            if measurement.get('es_peak'):
+                log("🎯 ¡PEAK ALCANZADO!")
+        else:
+            log("⚠️ Failed to save measurement")
+            
     except Exception as e:
-        log(f"⚠️ Analysis failed: {e}")
-        analysis = {
-            "nivel_pct": None,
-            "nivel_px": None,
-            "burbujas": "N/A",
-            "textura": "N/A",
-            "notas": f"Analysis error: {str(e)[:80]}",
-            "confianza": None
-        }
+        log(f"❌  Error análisis: {str(e)}")
 
-    # 3b. Outlier / jump validation — flag suspicious readings
-    MAX_JUMP = 20  # max % jump from recent 3-point average
-    if analysis.get('nivel_pct') is not None:
-        recent_rows = conn.execute(
-            "SELECT nivel_pct FROM mediciones WHERE sesion_id = ? AND nivel_pct IS NOT NULL ORDER BY id DESC LIMIT 3",
-            (session_id,)
-        ).fetchall()
-        if len(recent_rows) >= 3:
-            recent_avg = sum(r[0] for r in recent_rows) / len(recent_rows)
-            jump = abs(analysis['nivel_pct'] - recent_avg)
-            if jump > MAX_JUMP:
-                flag = f"[OUTLIER +{jump:.0f}%] "
-                analysis['notas'] = (flag + (analysis.get('notas') or ''))[:100]
-                analysis['confianza'] = min(analysis.get('confianza') or 3, 2)
-                log(f"⚠️ Suspicious reading: {jump:.0f}% jump from recent avg ({recent_avg:.0f}%). Flagged.")
-
-    # 4. Save to database
-    timestamp = save_measurement(conn, session_id, photo_path, analysis)
-
-    # 5. Detect peak
-    is_peak, peak_info = detect_peak(conn, session_id)
-    if is_peak:
-        log(f"🎯 PEAK DETECTED! Level: {peak_info['nivel']}% at {peak_info['timestamp']}")
-        send_peak_alert(session, peak_info)
-
-    # 5b. Sync to Firebase + Google Drive
-    drive_url = None
-    if FIREBASE_ENABLED:
-        try:
-            drive_info = fb_sync.sync_full_cycle(
-                session=session,
-                measurement={"timestamp": timestamp, **analysis},
-                photo_path=photo_path
-            )
-            if drive_info:
-                drive_url = drive_info.get("url")
-        except Exception as e:
-            log(f"⚠️ Firebase sync error (continuing): {e}")
-
-    # 6. Generate chart
-    try:
-        rows = load_session_data(conn, session_id)
-        if rows:
-            make_chart(rows, session_info=session)
-    except Exception as e:
-        log(f"⚠️ Chart generation failed: {e}")
-
-    return analysis, drive_url
+    return analysis, (uploaded_photo["url"] if uploaded_photo else None)
 
 
 def signal_handler(signum, frame):
