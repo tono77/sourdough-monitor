@@ -313,10 +313,10 @@
             margin-bottom: 8px;
         }
 
-        /* Metrics Row */
-        .metrics-row {
+        /* Top Row */
+        .top-dash-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(4, 1fr) 300px;
             gap: 16px;
             margin-bottom: 20px;
         }
@@ -326,6 +326,10 @@
             padding: 20px 16px;
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
         .metric-card::after {
@@ -371,7 +375,7 @@
         /* Chart Section */
         .charts-grid {
             display: grid;
-            grid-template-columns: 1fr 320px;
+            grid-template-columns: 1fr;
             gap: 16px;
             margin-bottom: 20px;
         }
@@ -810,8 +814,8 @@
                 <span id="notesText" class="notes-text"></span>
             </div>
 
-            <!-- Metrics -->
-            <div class="metrics-row">
+            <!-- Top Row: Metrics + Photo -->
+            <div class="top-dash-grid">
                 <div class="card metric-card level" style="position:relative;">
                     <button class="btn-edit-metric" onclick="promptEditCrecimiento()" title="Corregir medida">✎</button>
                     <div id="levelValue" class="metric-value">--</div>
@@ -834,22 +838,24 @@
                     <div class="metric-label">Tiempo</div>
                     <div id="timeSub" class="metric-sub">transcurrido</div>
                 </div>
+                <!-- Photo moved to top row -->
+                <div class="card photo-card" style="padding:0; margin:0; border:none; background:transparent;">
+                    <div id="photoFrame" class="photo-frame" onclick="openLightbox()" style="min-height:auto; height:100%; border:1px solid rgba(255,255,255,0.1);">
+                        <span class="placeholder">📷</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- Charts + Photo -->
+            <!-- Charts -->
             <div class="charts-grid">
                 <div class="card">
-                    <div class="card-title">📈 Nivel de Fermentación</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <div class="card-title" style="margin-bottom:0;">📈 Nivel de Fermentación (Línea de Vida 24 Hrs)</div>
+                        <button class="btn-calib" style="background:#ff6b35; padding:4px 12px; font-size:11px;" onclick="promptNewCycle()" title="Marca el punto y resetea el nivel a 0% para el gráfico">🔄 Alimentar (Nuevo Ciclo)</button>
+                    </div>
                     <div class="chart-container">
                         <canvas id="levelChart"></canvas>
                     </div>
-                </div>
-                <div class="card photo-card">
-                    <div class="card-title">📸 Última Captura</div>
-                    <div id="photoFrame" class="photo-frame" onclick="openLightbox()">
-                        <span class="placeholder">📷</span>
-                    </div>
-                    <div id="photoTime" class="photo-time"></div>
                 </div>
             </div>
 
@@ -926,7 +932,8 @@
             doc,
             onSnapshot,
             where,
-            updateDoc
+            updateDoc,
+            addDoc
         } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 
         // ─── Firebase config ───
@@ -1254,7 +1261,7 @@
             // Level metric
             if (latest) {
                 document.getElementById('levelValue').textContent =
-                    currentGrowth != null ? `+${currentGrowth.toFixed(0)}%` : '--';
+                    currentGrowth != null ? (currentGrowth >= 0 ? `+${currentGrowth.toFixed(0)}%` : `${currentGrowth.toFixed(0)}%`) : '--';
 
                 if (prevGrowth != null && currentGrowth != null) {
                     const diff = currentGrowth - prevGrowth; // always ≥ 0 (running max)
@@ -1314,7 +1321,7 @@
                 peakBanner.classList.remove('visible');
             }
 
-            updateCharts(measurements, gd);
+            updateCharts(measurements, gd, session);
             updateLatestPhoto(latest);
             updateGallery(measurements, gd, session);
         }
@@ -1332,26 +1339,59 @@
             });
         }
 
-        // Build smoothed cumulative growth data for display
+        // Build smoothed cumulative growth data for display with Multi-Cycle support
         function buildGrowthData(measurements) {
-            const validMeds = measurements.filter(m => m.nivel_pct != null);
+            const validMeds = measurements.filter(m => m.nivel_pct != null || m.is_ciclo === true);
             if (validMeds.length === 0) return null;
-            const baselineRaw = parseFloat(validMeds[0].nivel_pct);
-            // 1. Median smooth to remove noise spikes
-            const rawNiveles = validMeds.map(m => parseFloat(m.nivel_pct));
-            const smoothed = medianSmooth(rawNiveles, 5);
-            // 2. Running max → growth never decreases due to measurement noise
-            let curMax = smoothed[0];
-            const runningMaxArr = smoothed.map(v => { curMax = Math.max(curMax, v); return curMax; });
-            // 3. Growth from baseline (starts at 0%)
-            const growthArr = runningMaxArr.map(rmax => rmax - baselineRaw);
-            return { validMeds, baselineRaw, smoothed, runningMaxArr, growthArr };
+
+            const growthArr = [];
+            const smoothed = [];
+            const outputMeds = [];
+
+            // 1. Isolate chunks between user 'ciclo' events (Feeding)
+            const chunks = [];
+            let currentChunk = [];
+            validMeds.forEach(m => {
+                if (m.is_ciclo === true) {
+                    if (currentChunk.length > 0) chunks.push(currentChunk);
+                    currentChunk = []; // reset for the new chapter
+                } else {
+                    currentChunk.push(m);
+                }
+            });
+            if (currentChunk.length > 0) chunks.push(currentChunk);
+
+            // 2. Process each chunk identically isolated from the others
+            chunks.forEach(chunk => {
+                const rawNiveles = chunk.map(m => parseFloat(m.nivel_pct));
+                // We smooth within the chunk so medians don't mix falling cliffs with growing peaks
+                const chunkSmoothed = medianSmooth(rawNiveles, 5);
+                const chunkBaseline = rawNiveles.length > 0 ? rawNiveles[0] : 0; // The true raw physical first element of the chunk is baseline
+
+                chunkSmoothed.forEach((v, i) => {
+                    smoothed.push(v);
+                    growthArr.push(v - chunkBaseline);
+                    outputMeds.push(chunk[i]);
+                });
+            });
+
+            return { validMeds: outputMeds, smoothed, growthArr };
         }
 
-        function updateCharts(measurements, gd) {
+        function updateCharts(measurements, gd, session) {
             if (!levelChart || !gd) return;
             const { validMeds, growthArr } = gd;
             const bubbleMap = { 'ninguna': 0, 'pocas': 1, 'muchas': 2 };
+
+            // Set fixed 24-hour window based on session start time
+            if (session && session.hora_inicio) {
+                const startTime = new Date(session.hora_inicio).getTime();
+                const endTime = startTime + (24 * 60 * 60 * 1000); // +24 hours
+                levelChart.options.scales.x.min = startTime;
+                levelChart.options.scales.x.max = endTime;
+                activityChart.options.scales.x.min = startTime;
+                activityChart.options.scales.x.max = endTime;
+            }
 
             levelChart.data.datasets[0].data = validMeds.map((m, i) => ({
                 x: new Date(m.timestamp), y: growthArr[i]
@@ -1380,15 +1420,17 @@
             const timeEl = document.getElementById('photoTime');
 
             if (!latest || !latest.foto_url) {
-                frame.innerHTML = '<span class="placeholder">📷</span>';
-                timeEl.textContent = '';
+                if (frame) frame.innerHTML = '<span class="placeholder">📷</span>';
+                if (timeEl) timeEl.textContent = '';
                 return;
             }
 
-            frame.innerHTML = `<img src="${latest.foto_url}" alt="Latest capture"
-                onerror="this.parentElement.innerHTML='<span class=placeholder>📷</span>'">`;
+            if (frame) {
+                const fallbackStr = latest.foto_drive_id ? `this.onerror=null; this.src='https://drive.google.com/uc?id=${latest.foto_drive_id}';` : `this.parentElement.innerHTML='<span class=placeholder>📷</span>'`;
+                frame.innerHTML = `<img src="${latest.foto_url}" alt="Latest capture" onerror="${fallbackStr}">`;
+            }
 
-            if (latest.timestamp) {
+            if (latest.timestamp && timeEl) {
                 const t = new Date(latest.timestamp);
                 timeEl.textContent = t.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             }
@@ -1421,21 +1463,20 @@
 
                     if (prev && m.nivel_pct != null) {
                         const delta = parseFloat(m.nivel_pct) - parseFloat(prev.nivel_pct);
-                        // Clamp negatives to +0% (brief dips are noise, not real shrinkage)
-                        deltaLabel = delta > 0.5 ? `+${delta.toFixed(1)}%` : '+0%';
+                        deltaLabel = (delta >= 0 ? '+' : '') + delta.toFixed(1) + '%';
                     }
                 }
 
-                return { url: m.foto_url, time, deltaLabel };
+                return { url: m.foto_url, driveId: m.foto_drive_id, time, deltaLabel };
             });
 
             // Show newest first in the grid
             const total = lightboxPhotos.length;
             const photosHtml = [...lightboxPhotos].reverse().map((p, descIdx) => {
                 const ascIdx = total - 1 - descIdx;
+                const fallbackStr = p.driveId ? `this.onerror=null; this.src='https://drive.google.com/uc?id=${p.driveId}';` : `this.parentElement.style.display='none'`;
                 return `<div class="gallery-thumb" onclick="openLightboxAt(${ascIdx})">
-                    <img src="${p.url}" alt="${p.time}" loading="lazy"
-                         onerror="this.parentElement.style.display='none'">
+                    <img src="${p.url}" alt="${p.time}" loading="lazy" onerror="${fallbackStr}">
                     <div class="gallery-label" style="justify-content:center;">
                         <span class="gl-time">${p.time}</span>
                     </div>
@@ -1445,14 +1486,48 @@
             // Add Timelapse Card at the beginning if a URL exists
             const timelapseUrl = session ? session.timelapse_url : null;
             const timelapseHtml = (timelapseUrl && lightboxPhotos.length > 1) ? `
-                <a href="${timelapseUrl}" target="_blank" class="gallery-thumb" style="border: 2px solid var(--accent-primary); text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.5);">
-                    <div style="font-size:32px; margin-bottom: 8px;">📥</div>
-                    <div style="font-size: 14px; font-weight: bold; color: white; text-align: center;">Descargar<br>Video MP4</div>
-                </a>
+                <div class="gallery-thumb" style="border: 2px solid var(--accent-primary); position: relative; cursor: pointer; overflow: hidden; background-color: #111;" onclick="forceDownload('${timelapseUrl}', 'timelapse_fermento.mp4')" title="Clic para descargar MP4">
+                    <img src="${lightboxPhotos[lightboxPhotos.length-1].url}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.5; filter: blur(2px);">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                        <div style="font-size: 24px; margin-bottom: 4px;">🎬</div>
+                        <div style="font-size: 11px; font-weight: bold; color: white;">Descargar<br>MP4</div>
+                    </div>
+                </div>
             ` : '';
 
             grid.innerHTML = timelapseHtml + photosHtml;
         }
+
+        function forceDownload(url, filename) {
+            // Bypass CORS blocked BLOB fetch completely by instructing window to open purely natively
+            const nativeDownloadAnchor = document.createElement('a');
+            nativeDownloadAnchor.href = url + '&confirm=t'; // Attempt force direct download
+            nativeDownloadAnchor.target = '_blank';
+            nativeDownloadAnchor.download = filename;
+            document.body.appendChild(nativeDownloadAnchor);
+            nativeDownloadAnchor.click();
+            document.body.removeChild(nativeDownloadAnchor);
+        }
+
+        window.promptNewCycle = async () => {
+            if (!currentSessionId) return;
+            const note = prompt("Marca un Nuevo Ciclo de Alimentación.\nAñade una nota opcional (ej: 'Alimentado ratio 1:2:2'):");
+            if (note === null) return; // Se canceló
+            
+            const medsRef = collection(db, 'sesiones', currentSessionId, 'mediciones');
+            try {
+                await addDoc(medsRef, {
+                    timestamp: new Date().toISOString(),
+                    is_ciclo: true,
+                    notas: note ? `🔄 CICLO: ${note}` : '🔄 Nuevo ciclo de alimentación',
+                    confianza: 5
+                });
+                alert("¡Nuevo ciclo marcado exitosamente! Las siguientes lecturas empezarán desde 0%.");
+            } catch (err) {
+                console.error("Error creating cycle:", err);
+                alert("Hubo un error añadiendo el nuevo ciclo.");
+            }
+        };
 
         // ─── Timer ───
         function startTimer(startIso) {

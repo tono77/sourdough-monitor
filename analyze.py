@@ -128,32 +128,47 @@ def analyze_photo(photo_path, baseline_foto_path=None, baseline_nivel=None, tiem
         baseline_media = detect_media_type(baseline_foto_path)
         tiempo_txt = f" ({tiempo_min:.0f} minutos después)" if tiempo_min else ""
 
+        # In-Context Learning (Few Shot): Read corrections if any
+        corrections_context = ""
+        try:
+            corr_file = Path("data/dataset_corrections.json")
+            if corr_file.exists():
+                with open(corr_file, "r") as f:
+                    corrections = json.load(f)
+                if corrections:
+                    # Get up to 3 most recent corrections
+                    recent = corrections[-3:]
+                    corrections_context = "HISTORIAL DE CORRECCIONES MANUALES RECIENTES DEL USUARIO:\n"
+                    for c in recent:
+                        corrections_context += f"- A las {c.get('timestamp','').split('T')[-1][:5]}, el usuario reportó que el nivel real de crecimiento era: {c.get('nivel_pct')}%.\n"
+                    corrections_context += "\nUtiliza esta escala como referencia absoluta para la foto de ahora.\n\n"
+        except Exception:
+            pass
+
         prompt = f"""Eres un experto en análisis visual de fermentación de masa madre.
 
 Se te muestran DOS fotos del MISMO frasco{tiempo_txt}:
-- IMAGEN 1: Foto INICIAL del día. La BANDA DE GOMA (o cinta) marca el nivel inicial del fermento.
+- IMAGEN 1: Foto INICIAL del día. En esta foto, el nivel de la MASA (el líquido espeso) está en su punto más bajo.
 - IMAGEN 2: Foto ACTUAL.
 
+{corrections_context}
 MÉTODO DE MEDICIÓN (sigue exactamente):
-1. En cada foto, estima la altura de la SUPERFICIE del fermento como % del frasco visible.
-   - 0% = fondo del frasco, 100% = tope/borde superior del frasco
-   - Ejemplo: si la masa llega a 3/4 del frasco → 75%
-2. Llama A = altura en foto 1 (inicial), B = altura en foto 2 (actual)
-3. nivel_pct = round(B / A * 100)
-   - Sin cambio (B=A): nivel_pct = 100
-   - Fermento en foto1 al 40%, ahora al 80% → nivel_pct = 200 (se duplicó)
-   - Fermento en foto1 al 40%, ahora al 60% → nivel_pct = 150 (creció 50%)
+1. ADVERTENCIA: Hay una banda elástica o cinta en el frasco. ¡NO MIDAS LA BANDA ELASTICA! Debes medir la altura de la superficie de la MASA MADRE.
+2. En cada foto, estima la altura de la SUPERFICIE de la MASA como % del frasco visible (0%=fondo, 100%=tope del frasco).
+3. Llama A = altura de la masa en foto 1.
+4. Llama B = altura de la masa en foto 2.
+5. nivel_pct = round(B / A * 100). (Si B es mayor que A, nivel_pct será mayor a 100).
 
 Responde SOLO con JSON válido:
 {{
-  "nivel_pct": <resultado de round(B/A*100), o null si no puedes medir>,
+  "nivel_pct": <resultado de round(B/A*100)>,
   "altura_inicial_pct": <A: % de frasco lleno en foto 1>,
   "altura_actual_pct": <B: % de frasco lleno en foto 2>,
   "burbujas": "<ninguna|pocas|muchas>",
   "textura": "<lisa|rugosa|muy_activa>",
-  "notas": "<observación en español, máx 100 chars>",
-  "visible_marca": <true|false, si ves la banda/cinta en foto 2>,
-  "confianza": <1-5; 5=medición muy precisa, 3=estimada, 1=imágenes poco claras>
+  "notas": "<observación en español, concéntrate en si la MASA superó la banda elástica, máx 100 chars>",
+  "visible_marca": <true|false>,
+  "confianza": <1-5>
 }}"""
 
     # In-Context Learning (Few Shot): Read corrections if any
@@ -185,12 +200,13 @@ Responde SOLO con JSON válido:
 Analiza esta foto del frasco de fermento.
 {corrections_context}
 MÉTODO DE MEDICIÓN:
-1. Encuentra la BANDA DE GOMA (o cinta adhesiva) en el frasco — esa es la marca de inicio del fermento
-2. Estima la altura actual de la SUPERFICIE del fermento como % del frasco visible (0%=fondo, 100%=tope)
-3. Estima la altura de la BANDA como % del frasco visible
-4. nivel_pct = round(altura_actual / altura_banda * 100)
+1. ADVERTENCIA: Vas a ver una banda elástica o cinta en el frasco. Esta marca el nivel de INICIO.
+2. Encuentra la superficie de la MASA real.
+3. Estima la altura de la BANDA ELASTICA como % del frasco visible.
+4. Estima la altura actual de la SUPERFICIE DE LA MASA como % del frasco visible.
+5. nivel_pct = round(altura_masa / altura_banda * 100)
 
-Ejemplo: banda al 40% del frasco, fermento ahora al 60% → nivel_pct = round(60/40*100) = 150
+Ejemplo: banda al 40% del frasco, fermento ahora ha subido al 60% → nivel_pct = round(60/40*100) = 150
 
 Responde SOLO con JSON válido:
 {{
