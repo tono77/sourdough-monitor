@@ -159,7 +159,9 @@ export function initCharts() {
                 },
                 y: {
                     grid: { color: 'rgba(255,255,255,0.03)' },
-                    title: { display: true, text: 'Avance %', color: '#888', font: { size: 10 } }
+                    title: { display: true, text: 'Avance %', color: '#888', font: { size: 10 } },
+                    suggestedMin: -10,
+                    suggestedMax: 15
                 }
             }
         },
@@ -285,14 +287,25 @@ export function updateCharts(measurements, gd, session) {
     }));
     activityChart.update('none');
 
-    // Build increment data
+    // Build increment data — skip first point and cycle boundaries
+    const cicloTimestampSet = new Set(cicloEvents.map(m => m.timestamp));
     const incrementData = [];
-    for (let i = 0; i < validMeds.length; i++) {
-        const prevLevel = i > 0 ? growthArr[i - 1] : 0;
-        const currentLevel = growthArr[i];
+    for (let i = 1; i < validMeds.length; i++) {
+        // Skip if this is the first measurement after a cycle reset
+        // (detected when the previous measurement's timestamp is before a ciclo event
+        //  that sits between prev and current)
+        const prevTime = new Date(validMeds[i - 1].timestamp).getTime();
+        const currTime = new Date(validMeds[i].timestamp).getTime();
+        const crossesCycle = cicloEvents.some(c => {
+            const ct = new Date(c.timestamp).getTime();
+            return ct > prevTime && ct <= currTime;
+        });
+        if (crossesCycle) continue;
+
+        const delta = growthArr[i] - growthArr[i - 1];
         incrementData.push({
             x: new Date(validMeds[i].timestamp),
-            y: currentLevel - prevLevel
+            y: Math.round(delta * 10) / 10
         });
     }
     incrementChart.data.datasets[0].data = incrementData;
