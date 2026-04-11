@@ -120,14 +120,16 @@ export function initCharts() {
                 data: [],
                 backgroundColor: (ctx) => {
                     const val = ctx.raw ? ctx.raw.y : 0;
-                    return val > 0 ? 'rgba(76, 175, 80, 0.6)' : (val < 0 ? 'rgba(233, 69, 96, 0.6)' : 'rgba(255, 255, 255, 0.1)');
+                    return val > 0 ? 'rgba(76, 175, 80, 0.85)' : (val < 0 ? 'rgba(233, 69, 96, 0.85)' : 'rgba(255, 255, 255, 0.3)');
                 },
                 borderColor: (ctx) => {
                     const val = ctx.raw ? ctx.raw.y : 0;
-                    return val > 0 ? '#4caf50' : (val < 0 ? '#e94560' : 'rgba(255, 255, 255, 0.3)');
+                    return val > 0 ? '#66bb6a' : (val < 0 ? '#ef5350' : 'rgba(255, 255, 255, 0.5)');
                 },
-                borderWidth: 1,
-                borderRadius: 4
+                borderWidth: 2,
+                borderRadius: 4,
+                barPercentage: 0.7,
+                categoryPercentage: 0.8
             }]
         },
         options: {
@@ -154,12 +156,13 @@ export function initCharts() {
                 x: {
                     type: 'time',
                     time: { unit: 'hour', displayFormats: { hour: 'HH:mm' } },
-                    grid: { color: 'rgba(255,255,255,0.03)' },
-                    ticks: { maxRotation: 0 }
+                    grid: { color: 'rgba(255,255,255,0.08)' },
+                    ticks: { maxRotation: 0, color: '#888' }
                 },
                 y: {
-                    grid: { color: 'rgba(255,255,255,0.03)' },
-                    title: { display: true, text: 'Avance %', color: '#888', font: { size: 10 } },
+                    grid: { color: 'rgba(255,255,255,0.08)' },
+                    title: { display: true, text: 'Avance %', color: '#aaa', font: { size: 11 } },
+                    ticks: { color: '#888', callback: v => `${v >= 0 ? '+' : ''}${v}%` },
                     suggestedMin: -10,
                     suggestedMax: 15
                 }
