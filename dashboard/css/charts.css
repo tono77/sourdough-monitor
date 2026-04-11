@@ -1,0 +1,81 @@
+/* ─── Top Row: Metrics Grid ─── */
+.top-dash-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr) 300px;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.metric-card {
+    text-align: center;
+    padding: 20px 16px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.metric-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    border-radius: 2px;
+}
+
+.metric-card.level::after { background: linear-gradient(90deg, var(--accent-primary), var(--accent-warm)); }
+.metric-card.bubbles::after { background: linear-gradient(90deg, #e8a045, #ffc107); }
+.metric-card.texture::after { background: linear-gradient(90deg, var(--accent-blue), #7c4dff); }
+.metric-card.time::after { background: linear-gradient(90deg, var(--accent-green), #66bb6a); }
+
+.metric-value {
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+    letter-spacing: -1px;
+}
+
+.metric-card.level .metric-value { color: var(--accent-primary); }
+.metric-card.bubbles .metric-value { color: #e8a045; font-size: 28px; }
+.metric-card.texture .metric-value { color: var(--accent-blue); font-size: 28px; }
+.metric-card.time .metric-value { color: var(--accent-green); }
+
+.metric-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.metric-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 6px;
+}
+
+/* ─── Chart Section ─── */
+.charts-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.chart-container {
+    position: relative;
+    height: 320px;
+}
+
+.chart-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* ─── Activity Chart ─── */
+.activity-section { margin-bottom: 20px; }
+
+.activity-chart-container { height: 140px; }

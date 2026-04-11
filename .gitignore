@@ -6,6 +6,8 @@ __pycache__/
 .Python
 env/
 venv/
+.venv/
+*.egg-info/
 
 # Secrets file
 .env
@@ -40,4 +42,8 @@ data/gdrive_token.json
 *.tmp
 /tmp/
 config.json
-venv/
+
+# Build artifacts
+dist/
+build/
+.pytest_cache/
