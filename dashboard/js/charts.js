@@ -128,8 +128,9 @@ export function initCharts() {
                 },
                 borderWidth: 2,
                 borderRadius: 4,
-                barPercentage: 0.7,
-                categoryPercentage: 0.8
+                minBarLength: 6,
+                barThickness: 'flex',
+                maxBarThickness: 20
             }]
         },
         options: {
@@ -163,8 +164,8 @@ export function initCharts() {
                     grid: { color: 'rgba(255,255,255,0.08)' },
                     title: { display: true, text: 'Avance %', color: '#aaa', font: { size: 11 } },
                     ticks: { color: '#888', callback: v => `${v >= 0 ? '+' : ''}${v}%` },
-                    suggestedMin: -10,
-                    suggestedMax: 15
+                    suggestedMin: -3,
+                    suggestedMax: 3
                 }
             }
         },
