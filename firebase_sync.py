@@ -260,6 +260,20 @@ def upload_video_to_drive(video_path, old_file_id=None):
         print(f"⚠️ Drive API Video Error: {e}")
         return None
 
+def pull_hibernate_state():
+    """Retrieve hibernation state to determine if monitoring is paused (refrigerator mode)."""
+    global _firestore_db
+    if _firestore_db is None:
+        if init_firebase() is None:
+            return False
+    try:
+        doc_ref = _firestore_db.collection("app_config").document("state")
+        doc = doc_ref.get()
+        if doc.exists:
+            return doc.to_dict().get("is_hibernating", False)
+    except Exception as e:
+        pass
+    return False
 
 def sync_session(session_data):
     """Sync session data to Firestore."""
@@ -284,6 +298,9 @@ def sync_session(session_data):
             "notas": session_data.get("notas"),
             "fondo_y_pct": session_data.get("fondo_y_pct"),
             "tope_y_pct": session_data.get("tope_y_pct"),
+            "base_y_pct": session_data.get("base_y_pct"),
+            "izq_x_pct": session_data.get("izq_x_pct"),
+            "der_x_pct": session_data.get("der_x_pct"),
             "is_calibrated": session_data.get("is_calibrated", 0),
             "timelapse_url": session_data.get("timelapse_url"),
             "timelapse_file_id": session_data.get("timelapse_file_id"),
@@ -312,7 +329,10 @@ def pull_calibration(session_id):
             if data.get("is_calibrated") == 1:
                 return {
                     "fondo_y_pct": data.get("fondo_y_pct"),
-                    "tope_y_pct": data.get("tope_y_pct")
+                    "tope_y_pct": data.get("tope_y_pct"),
+                    "base_y_pct": data.get("base_y_pct"),
+                    "izq_x_pct": data.get("izq_x_pct"),
+                    "der_x_pct": data.get("der_x_pct"),
                 }
     except Exception as e:
         print(f"⚠️  Firestore pull calibration error: {e}")
@@ -361,6 +381,18 @@ def sync_measurement(session_id, measurement_data, photo_drive_info=None):
                    .collection("sesiones").document(session_doc)
                    .collection("mediciones").document(measurement_id))
 
+        # Encode the photo as a Base64 string for direct UI rendering
+        foto_base64 = None
+        try:
+            foto_real_path = measurement_data.get("foto_path")
+            if foto_real_path and os.path.exists(foto_real_path):
+                import base64
+                with open(foto_real_path, "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                    foto_base64 = f"data:image/jpeg;base64,{encoded_string}"
+        except Exception as e:
+            print(f"⚠️  Error encoding image to base64: {e}")
+
         doc_data = {
             "timestamp": measurement_data.get("timestamp", ""),
             "nivel_pct": measurement_data.get("nivel_pct"),
@@ -372,12 +404,20 @@ def sync_measurement(session_id, measurement_data, photo_drive_info=None):
             "altura_y_pct": measurement_data.get("altura_y_pct"),
             "confianza": measurement_data.get("confianza"),
             "modo_analisis": measurement_data.get("modo_analisis", "single"),
+            "foto_base64": foto_base64
         }
 
         # Add photo URL from Drive if available
-        if photo_drive_info:
-            doc_data["foto_url"] = photo_drive_info.get("url", "")
-            doc_data["foto_drive_id"] = photo_drive_info.get("file_id", "")
+        if foto_base64:
+            doc_data["foto_url"] = foto_base64
+        elif photo_drive_info and photo_drive_info.get("url"):
+            doc_data["foto_url"] = photo_drive_info.get("url")
+        
+        if photo_drive_info and photo_drive_info.get("preview_url"):
+            doc_data["foto_preview"] = photo_drive_info.get("preview_url")
+        
+        if photo_drive_info and photo_drive_info.get("file_id"):
+            doc_data["foto_drive_id"] = photo_drive_info.get("file_id")
 
         doc_ref.set(doc_data, merge=True)
         return True

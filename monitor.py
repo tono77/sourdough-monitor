@@ -10,6 +10,11 @@ Usage:
 
 import sys
 import os
+
+# macOS gRPC fork bug mitigation (Required because OpenCV forks AVFoundation)
+os.environ["GRPC_ENABLE_FORK_SUPPORT"] = "False" # disabling fork support often prevents the FD leak
+os.environ["GRPC_POLL_STRATEGY"] = "poll"
+
 import json
 import time
 import signal
@@ -64,18 +69,8 @@ def log(msg):
 
 
 def is_in_active_hours(config):
-    """Check if current time is within monitoring hours."""
-    now = datetime.now()
-    schedule = config.get("schedule", {})
-    start_h = schedule.get("start_hour", 7)
-    start_m = schedule.get("start_minute", 30)
-    end_h = schedule.get("end_hour", 23)
-    end_m = schedule.get("end_minute", 59)
-
-    start = now.replace(hour=start_h, minute=start_m, second=0, microsecond=0)
-    end = now.replace(hour=end_h, minute=end_m, second=59, microsecond=0)
-
-    return start <= now <= end
+    """Check if current time is within monitoring hours (Now runs 24/7)."""
+    return True
 
 
 def seconds_until_start(config):
@@ -159,16 +154,15 @@ def run_cycle(conn, session):
             calib = fb_sync.pull_calibration(session_id)
             if calib:
                 conn.execute(
-                    "UPDATE sesiones SET fondo_y_pct = ?, tope_y_pct = ?, is_calibrated = 1 WHERE id = ?",
-                    (calib["fondo_y_pct"], calib["tope_y_pct"], session_id)
+                    "UPDATE sesiones SET fondo_y_pct = ?, tope_y_pct = ?, base_y_pct = ?, izq_x_pct = ?, der_x_pct = ?, is_calibrated = 1 WHERE id = ?",
+                    (calib["fondo_y_pct"], calib["tope_y_pct"], calib.get("base_y_pct"), calib.get("izq_x_pct"), calib.get("der_x_pct"), session_id)
                 )
                 conn.commit()
-                log(f"📐 Calibración sincronizada: fondo={calib['fondo_y_pct']:.1f}%, tope={calib['tope_y_pct']:.1f}%")
+                log(f"📐 Calibración sincronizada: base={calib.get('base_y_pct', 0):.1f}%, fondo={calib['fondo_y_pct']:.1f}%, tope={calib['tope_y_pct']:.1f}%, izq={calib.get('izq_x_pct', 0):.1f}%, der={calib.get('der_x_pct', 0):.1f}%")
             
             # Pull user corrections (Few-shot learning examples)
             corrections = fb_sync.pull_corrections(session_id)
             if corrections:
-                import json
                 corrections_file.parent.mkdir(exist_ok=True)
                 with open(corrections_file, "w") as f:
                     json.dump(corrections, f, indent=2)
@@ -295,6 +289,22 @@ def main():
     while running:
         config = load_config()  # Reload config each cycle
 
+        # 1. Check for hibernation state (refrigerator mode)
+        is_hibernating = False
+        if FIREBASE_ENABLED:
+            try:
+                is_hibernating = fb_sync.pull_hibernate_state()
+            except Exception:
+                pass
+                
+        if is_hibernating:
+            log("❄️ Masa en el refrigerador (Hibernando). Esperando...")
+            wait_secs = 60 # Check again every 60 seconds
+            sleep_until = time.time() + wait_secs
+            while running and time.time() < sleep_until:
+                time.sleep(5)
+            continue
+
         if not is_in_active_hours(config):
             # Close any active session
             try:
@@ -332,12 +342,16 @@ def main():
                     start = datetime.fromisoformat(session["hora_inicio"])
                     elapsed = (datetime.now() - start).total_seconds() / 3600
 
-                # Normalize nivel: first measurement = 0%, rest = delta from baseline
+                # Calculate velocity vs previous measurement
                 valid = [m for m in measurements if m.get("nivel_pct") is not None]
                 if latest and latest.get("nivel_pct") is not None and valid:
-                    baseline = float(valid[0]["nivel_pct"])
-                    norm_nivel = round(float(latest["nivel_pct"]) - baseline, 1)
-                    latest = {**latest, "nivel_pct": norm_nivel}
+                    curr_nivel = float(latest["nivel_pct"])
+                    velocity = 0
+                    if len(valid) > 1:
+                        prev = float(valid[-2]["nivel_pct"])
+                        velocity = round(curr_nivel - prev, 1)
+                    
+                    latest = {**latest, "nivel_pct": curr_nivel, "velocity": velocity}
 
                 send_update_email(session, latest, len(measurements), elapsed,
                                   photo_url=drive_url)

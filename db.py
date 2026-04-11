@@ -38,6 +38,9 @@ def init_db():
             notas TEXT,
             fondo_y_pct REAL,
             tope_y_pct REAL,
+            base_y_pct REAL,
+            izq_x_pct REAL,
+            der_x_pct REAL,
             is_calibrated INTEGER DEFAULT 0,
             timelapse_url TEXT,
             timelapse_file_id TEXT
@@ -85,6 +88,9 @@ def init_db():
     for col_def in [
         ("fondo_y_pct",   "ALTER TABLE sesiones ADD COLUMN fondo_y_pct REAL DEFAULT NULL"),
         ("tope_y_pct",    "ALTER TABLE sesiones ADD COLUMN tope_y_pct REAL DEFAULT NULL"),
+        ("base_y_pct",    "ALTER TABLE sesiones ADD COLUMN base_y_pct REAL DEFAULT NULL"),
+        ("izq_x_pct",     "ALTER TABLE sesiones ADD COLUMN izq_x_pct REAL DEFAULT NULL"),
+        ("der_x_pct",     "ALTER TABLE sesiones ADD COLUMN der_x_pct REAL DEFAULT NULL"),
         ("is_calibrated", "ALTER TABLE sesiones ADD COLUMN is_calibrated INTEGER DEFAULT 0"),
     ]:
         if col_def[0] not in existing_ses_cols:
@@ -146,10 +152,20 @@ def get_or_create_session(conn):
         return dict(row)
 
     now = datetime.now().isoformat()
-    cursor = conn.execute(
-        "INSERT INTO sesiones (fecha, hora_inicio, estado) VALUES (?, ?, 'activa')",
-        (today, now)
-    )
+    # Attempt to inherit calibration from the most recent session
+    prev = conn.execute("SELECT is_calibrated, fondo_y_pct, tope_y_pct, base_y_pct, izq_x_pct, der_x_pct FROM sesiones ORDER BY id DESC LIMIT 1").fetchone()
+    
+    if prev and prev[0] == 1:
+        cursor = conn.execute(
+            "INSERT INTO sesiones (fecha, hora_inicio, estado, is_calibrated, fondo_y_pct, tope_y_pct, base_y_pct, izq_x_pct, der_x_pct) VALUES (?, ?, 'activa', ?, ?, ?, ?, ?, ?)",
+            (today, now, prev[0], prev[1], prev[2], prev[3], prev[4], prev[5])
+        )
+    else:
+        cursor = conn.execute(
+            "INSERT INTO sesiones (fecha, hora_inicio, estado) VALUES (?, ?, 'activa')",
+            (today, now)
+        )
+        
     conn.commit()
     session_id = cursor.lastrowid
     print(f"🆕 New session #{session_id} created for {today}")
@@ -187,23 +203,23 @@ def save_measurement(conn, session_id, photo_path, analysis):
     timestamp = datetime.now().isoformat()
     
     # Check if session is calibrated to compute calibrated capacity (0-100)
-    ses = conn.execute("SELECT fondo_y_pct, tope_y_pct, is_calibrated FROM sesiones WHERE id = ?", (session_id,)).fetchone()
+    ses = conn.execute("SELECT fondo_y_pct, tope_y_pct, is_calibrated, base_y_pct FROM sesiones WHERE id = ?", (session_id,)).fetchone()
     altura = analysis.get("altura_y_pct")
     if altura is None:
         altura = analysis.get("altura_actual_pct")
+        
+    if altura is not None:
+        altura = float(altura)
+        
     nivel_pct = analysis.get("nivel_pct")
     
-    if ses and ses[2] == 1 and altura is not None and ses[0] is not None and ses[1] is not None:
+    # Mathematical fallback: only engage OpenCV triangulation if Claude's visual inference dropped
+    if nivel_pct is None and ses and ses[2] == 1 and altura is not None and ses[0] is not None and ses[3] is not None:
         fondo = ses[0]
-        tope = ses[1]
-        # Calculate bound: (altura - fondo) / (tope - fondo) 
-        # Note: top is smaller Y in image coordinates typically (0 is top of image).
-        # We need to map so that if altura = fondo -> 0%, if altura = tope -> 100%
-        # Usually from Claude an Y=0 is bottom and 100 is top if they said "0%=fondo, 100%=tope"
-        # Let's assume standard math (altura - fondo) / (tope - fondo) * 100.
-        if tope != fondo:
-            val = (altura - fondo) / (tope - fondo) * 100
-            nivel_pct = round(max(0, min(150, val)), 1)
+        base = ses[3]
+        if base != fondo:
+            val = (fondo - altura) / (base - fondo) * 100
+            nivel_pct = round(max(-50, min(500, val)), 1)
         
     conn.execute("""
         INSERT INTO mediciones

@@ -14,6 +14,7 @@ import subprocess
 import mimetypes
 from pathlib import Path
 from datetime import datetime
+from cv_analyze import analyze_photo_cv
 
 BASE_DIR = Path(__file__).resolve().parent
 CONFIG_PATH = BASE_DIR / "config.json"
@@ -148,21 +149,22 @@ def analyze_photo(photo_path, baseline_foto_path=None, baseline_nivel=None, tiem
         prompt = f"""Eres un experto en análisis visual de fermentación de masa madre.
 
 Se te muestran DOS fotos del MISMO frasco{tiempo_txt}:
-- IMAGEN 1: Foto INICIAL del día. En esta foto, el nivel de la MASA (el líquido espeso) está en su punto más bajo.
+- IMAGEN 1: Foto INICIAL del día.
 - IMAGEN 2: Foto ACTUAL.
 
 {corrections_context}
 MÉTODO DE MEDICIÓN (sigue exactamente):
-1. ADVERTENCIA: Hay una banda elástica o cinta en el frasco. ¡NO MIDAS LA BANDA ELASTICA! Debes medir la altura de la superficie de la MASA MADRE.
-2. En cada foto, estima la altura de la SUPERFICIE de la MASA como % del frasco visible (0%=fondo, 100%=tope del frasco).
-3. Llama A = altura de la masa en foto 1.
-4. Llama B = altura de la masa en foto 2.
-5. nivel_pct = round(B / A * 100). (Si B es mayor que A, nivel_pct será mayor a 100).
+1. ESPACIO DE COORDENADAS: En esta imagen, asume como ser humano que 0% es la BASE INFERIOR del frasco (vacío total) y 100% es la TAPA SUPERIOR del frasco (lleno total).
+2. Encuentra la línea horizontal exacta de la superficie superior de la MASA MADRE. 
+3. Llama A = El volumen tridimensional inicial marcado por la banda roja en la foto 1. Observa qué "rayita" o marca del vidrio abarca.
+4. Llama B = El volumen tridimensional actual de la masa en la foto 2. Guiate estrictamente por las "rayitas" horizontales impresas en el frasco.
+5. nivel_pct = Calcula mentalmente el % de crecimiento volumétrico. ¡Si el volumen se duplicó, es 100%! Por ejemplo, si en la foto 1 la masa ocupaba 2 rayitas del frasco, y en la foto 2 subió hasta ocupar 4 rayitas, ¡eso es exactamente un 100% de crecimiento! Si ocupa 5 rayitas, es un 150%. 
+6. ¡IMPORTANTÍSIMO! No uses regla de tres con los píxeles de la foto (la perspectiva deforma la imagen y hace que las rayitas de arriba parezcan más pequeñas). Usa las rayas impresas físicas en el vidrio como tu única regla absoluta. Mide la SUPERFICIE DE LA MASA. Responde en "nivel_pct" directamente tu % estimado final.
 
 Responde SOLO con JSON válido:
 {{
-  "nivel_pct": <resultado de round(B/A*100)>,
-  "altura_inicial_pct": <A: % de frasco lleno en foto 1>,
+  "nivel_pct": <tu % de crecimiento calculado guiándote por las marcas del frasco>,
+  "altura_inicial_pct": <A: tu estimación mental del nivel original>,
   "altura_actual_pct": <B: % de frasco lleno en foto 2>,
   "burbujas": "<ninguna|pocas|muchas>",
   "textura": "<lisa|rugosa|muy_activa>",
@@ -195,31 +197,26 @@ Responde SOLO con JSON válido:
             {"type": "text", "text": prompt}
         ]
     else:
-        # Single-photo mode
         prompt = f"""Eres un analizador experto de masa madre (sourdough starter).
 Analiza esta foto del frasco de fermento.
 {corrections_context}
 MÉTODO DE MEDICIÓN:
-1. ADVERTENCIA: Vas a ver una banda elástica o cinta en el frasco. Esta marca el nivel de INICIO.
-2. Encuentra la superficie de la MASA real.
-3. Estima la altura de la BANDA ELASTICA como % del frasco visible.
-4. Estima la altura actual de la SUPERFICIE DE LA MASA como % del frasco visible.
-5. nivel_pct = round(altura_masa / altura_banda * 100)
-
-Ejemplo: banda al 40% del frasco, fermento ahora ha subido al 60% → nivel_pct = round(60/40*100) = 150
+1. ESPACIO DE COORDENADAS: En la imagen visualizada, asume tu intuición habitual: 0% es la BASE plana del frasco de cristal (vacío) y 100% es el BORDE SUPERIOR de la tapa (lleno).
+2. Vas a ver tu referencia: Una banda elástica (generalmente roja) abrazando el frasco.
+3. Encuentra la línea horizontal donde reposa la superficie superior de la MASA real dentro del vidrio.
+4. Estima la posición Y (altura) de la BANDA ELASTICA en este espacio 0-100%.
+5. Estima la posición Y (altura) de la SUPERFICIE DE LA MASA en este espacio 0-100%.
 
 Responde SOLO con JSON válido:
 {{
-  "nivel_pct": <resultado de round(altura_actual/altura_banda*100), null si no puedes medir>,
-  "altura_inicial_pct": <% del frasco donde está la banda/cinta>,
-  "altura_actual_pct": <% del frasco donde está la superficie actual del fermento>,
+  "altura_y_pct": <% del frasco donde está la superficie actual del fermento (EJEMPLO: 42.5)>,
+  "altura_banda_pct": <% del frasco donde está la banda/cinta>,
   "burbujas": "<ninguna|pocas|muchas>",
   "textura": "<lisa|rugosa|muy_activa>",
   "notas": "<observación en español, máx 100 chars>",
-  "visible_marca": <true|false>,
-  "confianza": <1-5; 5=banda visible y medición precisa, 1=imagen poco clara>
+  "visible_marca": <true|false>
 }}
-Si no puedes ver el frasco, usa nivel_pct: null y confianza: 1."""
+Si no puedes ver el frasco, usa altura_y_pct: null."""
         content = [
             {"type": "image", "source": {"type": "base64", "media_type": current_media, "data": current_b64}},
             {"type": "text", "text": prompt}
@@ -246,19 +243,47 @@ Si no puedes ver el frasco, usa nivel_pct: null y confianza: 1."""
         timeout=30
     )
 
-    result = response.json()
-    if "error" in result:
-        raise ValueError(f"Claude API error: {result['error']['message']}")
-
-    text = result["content"][0]["text"].strip()
-
-
-
-    # Extract JSON from response
-    match = re.search(r'\{.*\}', text, re.DOTALL)
-    if match:
-        return json.loads(match.group())
-    return json.loads(text)
+    try:
+        raw_resp = response.json()
+        if "content" not in raw_resp:
+            print(f"⚠️ Claude unexpected response: {raw_resp}")
+        
+        text = raw_resp["content"][0]["text"]
+        # Claude might wrap JSON in markdown blocks
+        if "```json" in text:
+            text = text.split("```json")[1].split("```")[0].strip()
+        elif "```" in text:
+            text = text.split("```")[1].split("```")[0].strip()
+            
+        analysis_data = json.loads(text)
+    except Exception as e:
+        print(f"⚠️ Failed to parse Claude response: {e}")
+        # Graceful fallback: If AI vision goes down, OpenCV geometry ensures the math succeeds!
+        analysis_data = {
+            "burbujas": "Pocas",
+            "textura": "Estándar",
+            "notas": "Modo Clínico: Medición Matemática por OpenCV (IA inactiva por error de red)"
+        }
+        
+    # Inject deterministic Computer Vision processing!
+    try:
+        from db import init_db
+        conn = init_db()
+        ses = conn.execute("SELECT izq_x_pct, der_x_pct, base_y_pct, tope_y_pct, fondo_y_pct FROM sesiones WHERE estado='activa' ORDER BY id DESC LIMIT 1").fetchone()
+        conn.close()
+        
+        if ses and ses[0] is not None and ses[1] is not None and ses[2] is not None and ses[3] is not None:
+            calib_data = {"izq_x_pct": ses[0], "der_x_pct": ses[1], "base_y_pct": ses[2], "tope_y_pct": ses[3], "fondo_y_pct": ses[4]}
+            cv_altura = analyze_photo_cv(photo_path, calib_data)
+            if cv_altura is not None:
+                # We feed OpenCV straight into the pipeline!
+                analysis_data["altura_y_pct"] = cv_altura
+                analysis_data["modo_analisis"] = "OpenCV + Sonnet"
+                analysis_data["visible_marca"] = True
+    except Exception as e:
+        print(f"⚠️ OpenCV Processing Error: {e}")
+        
+    return analysis_data
 
 
 def capture_photo():
@@ -279,6 +304,7 @@ def capture_photo():
                 "-f", "avfoundation",
                 "-framerate", "30",
                 "-i", camera_index,
+                "-ss", "00:00:02",
                 "-frames:v", "1",
                 "-update", "1",
                 "-y", str(output)

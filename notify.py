@@ -57,7 +57,18 @@ def send_update_email(session, latest_measurement, measurement_count, elapsed_ho
     # Emoji for texture
     textura_emoji = {"lisa": "😴", "rugosa": "😊", "muy_activa": "🔥"}.get(textura, "😴")
 
-    subject = f"🍞 Masa Madre — {now.strftime('%H:%M')} | Nivel: {nivel}%"
+    nivel_str = f"+{nivel}%" if isinstance(nivel, (int, float)) and nivel > 0 else f"{nivel}%" if isinstance(nivel, (int, float)) else nivel
+
+    velocity = latest_measurement.get("velocity", 0) if latest_measurement else 0
+    if isinstance(velocity, (int, float)) and latest_measurement and "velocity" in latest_measurement:
+        velocity_color = "#4caf50" if velocity > 0 else "#e94560" if velocity < 0 else "#888"
+        velocity_arrow = "↑" if velocity > 0 else "↓" if velocity < 0 else "→"
+        velocity_sign = "+" if velocity > 0 else ""
+        velocity_html = f'<div style="font-size: 10px; color: {velocity_color}; margin-top: 2px;">{velocity_arrow} {velocity_sign}{velocity}%</div><div style="font-size: 9px; color: #666;">vs anterior</div>'
+    else:
+        velocity_html = ""
+
+    subject = f"🍞 Masa Madre — {now.strftime('%H:%M')} | Crecimiento: {nivel_str}"
 
     html_body = f"""
     <html>
@@ -71,8 +82,9 @@ def send_update_email(session, latest_measurement, measurement_count, elapsed_ho
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
                 <tr>
                     <td style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px 0 0 0; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
-                        <div style="font-size: 24px; font-weight: bold; color: #e94560;">{nivel}%</div>
-                        <div style="font-size: 11px; color: #888;">Nivel</div>
+                        <div style="font-size: 24px; font-weight: bold; color: #e94560; margin-bottom: 2px;">{nivel_str}</div>
+                        <div style="font-size: 11px; color: #888; font-weight: bold;">TOTAL</div>
+                        {velocity_html}
                     </td>
                     <td style="padding: 12px; background: rgba(255,255,255,0.05); text-align: center; border: 1px solid rgba(255,255,255,0.05);">
                         <div style="font-size: 24px;">{burbuja_emoji}</div>
@@ -138,8 +150,9 @@ def send_peak_alert(session, peak_info):
     dashboard_url = get_dashboard_url()
     nivel = peak_info.get("nivel", "N/A")
     timestamp = peak_info.get("timestamp", "N/A")
+    nivel_str = f"+{nivel}%" if isinstance(nivel, (int, float)) and nivel > 0 else f"{nivel}%" if isinstance(nivel, (int, float)) else nivel
 
-    subject = f"🎯 ¡PEAK DETECTADO! Masa Madre alcanzó {nivel}%"
+    subject = f"🎯 ¡PEAK DETECTADO! Masa Madre creció {nivel_str}"
 
     html_body = f"""
     <html>
@@ -151,8 +164,8 @@ def send_peak_alert(session, peak_info):
             </p>
 
             <div style="text-align: center; padding: 24px; background: rgba(255,215,0,0.1); border-radius: 12px; margin-bottom: 20px;">
-                <div style="font-size: 48px; font-weight: bold; color: #ffd700;">{nivel}%</div>
-                <div style="font-size: 13px; color: #999; margin-top: 4px;">Nivel máximo alcanzado</div>
+                <div style="font-size: 48px; font-weight: bold; color: #ffd700;">{nivel_str}</div>
+                <div style="font-size: 13px; color: #999; margin-top: 4px;">Crecimiento máximo alcanzado</div>
                 <div style="font-size: 12px; color: #888; margin-top: 8px;">📅 {timestamp}</div>
             </div>
 

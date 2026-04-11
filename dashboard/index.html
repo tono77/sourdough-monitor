@@ -242,6 +242,25 @@
         }
         #signOutBtn:hover { border-color: rgba(233,69,96,0.4); color: var(--accent-primary); }
 
+        .btn-hibernate {
+            background: rgba(3,169,244,0.1);
+            border: 1px solid rgba(3,169,244,0.3);
+            color: #03a9f4;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-hibernate:hover {
+            background: rgba(3,169,244,0.2);
+            transform: scale(1.02);
+        }
+
         .status-badge {
             display: flex;
             align-items: center;
@@ -266,6 +285,12 @@
             color: #888;
         }
 
+        .status-badge.hibernating {
+            background: rgba(3,169,244,0.12);
+            border: 1px solid rgba(3,169,244,0.3);
+            color: #03a9f4;
+        }
+
         .status-dot {
             width: 8px; height: 8px;
             border-radius: 50%;
@@ -274,6 +299,7 @@
 
         .status-badge.active .status-dot { background: #4caf50; }
         .status-badge.inactive .status-dot { background: #555; animation: none; }
+        .status-badge.hibernating .status-dot { background: #03a9f4; animation: none; box-shadow: 0 0 8px rgba(3,169,244,0.6); }
 
         @keyframes pulse {
             0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(76,175,80,0.4); }
@@ -650,8 +676,17 @@
             pointer-events: none;
             display: none;
         }
+        .calib-line-v {
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 2px;
+            pointer-events: none;
+            display: none;
+        }
         #calibLineFondo { background: #e94560; box-shadow: 0 0 10px #e94560; }
         #calibLineTope { background: #4caf50; box-shadow: 0 0 10px #4caf50; }
+        #calibLineIzq { background: #ffeb3b; box-shadow: 0 0 10px #ffeb3b; }
+        #calibLineDer { background: #03a9f4; box-shadow: 0 0 10px #03a9f4; }
         
         .calib-instruction {
             position: absolute;
@@ -774,6 +809,9 @@
                         <span class="realtime-dot"></span>
                         Tiempo real
                     </span>
+                    <button id="hibernateBtn" class="btn-hibernate" style="display:none" onclick="toggleHibernation()">
+                        ❄️ Refrigerar
+                    </button>
                     <div id="statusBadge" class="status-badge inactive">
                         <span class="status-dot"></span>
                         <span id="statusText">Cargando...</span>
@@ -851,10 +889,22 @@
                 <div class="card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                         <div class="card-title" style="margin-bottom:0;">📈 Nivel de Fermentación (Línea de Vida 24 Hrs)</div>
-                        <button class="btn-calib" style="background:#ff6b35; padding:4px 12px; font-size:11px;" onclick="promptNewCycle()" title="Marca el punto y resetea el nivel a 0% para el gráfico">🔄 Alimentar (Nuevo Ciclo)</button>
+                        <div>
+                            <button class="btn-calib" style="background:#4caf50; padding:4px 12px; font-size:11px; margin-right:8px;" onclick="startCalibration()" title="Ajusta los límites del análisis CV">📐 Calibrar Visión</button>
+                            <button class="btn-calib" style="background:#ff6b35; padding:4px 12px; font-size:11px;" onclick="promptNewCycle()" title="Marca el punto y resetea el nivel a 0% para el gráfico">🔄 Alimentar (Nuevo Ciclo)</button>
+                        </div>
                     </div>
                     <div class="chart-container">
                         <canvas id="levelChart"></canvas>
+                    </div>
+                </div>
+                <!-- Increment Chart (Velocity) -->
+                <div class="card" style="margin-top:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <div class="card-title" style="margin-bottom:0;">⚡ Velocidad de Crecimiento (Incrementos por Medición)</div>
+                    </div>
+                    <div class="chart-container" style="height:200px;">
+                        <canvas id="incrementChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -897,8 +947,11 @@
         <div style="position:relative; display:inline-block; max-height:90vh; max-width:90vw;">
             <img id="lightboxImg" src="" alt="Photo" style="max-height:90vh; max-width:90vw; object-fit:contain; cursor:crosshair;" onclick="handleLightboxClick(event)">
             <div id="calibOverlay" class="calib-overlay">
+                <div id="calibLineBase" class="calib-line" style="border-top-color: #4caf50;"></div>
                 <div id="calibLineFondo" class="calib-line"></div>
-                <div id="calibLineTope" class="calib-line"></div>
+                <div id="calibLineTope" class="calib-line" style="border-top-color: #e94560;"></div>
+                <div id="calibLineIzq" class="calib-line-v"></div>
+                <div id="calibLineDer" class="calib-line-v"></div>
             </div>
             <div id="calibInstruction" class="calib-instruction">Haz clic en la BANDA ROJA (Fondo 0%)</div>
         </div>
@@ -933,7 +986,8 @@
             onSnapshot,
             where,
             updateDoc,
-            addDoc
+            addDoc,
+            setDoc
         } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 
         // ─── Firebase config ───
@@ -966,6 +1020,7 @@
         // ─── State ───
         let currentSessionId = null;
         let levelChart = null;
+        let incrementChart = null;
         let activityChart = null;
         let measurementsUnsubscribe = null;
         let sessionDocUnsubscribe = null;
@@ -974,6 +1029,8 @@
         let timerInterval = null;
         let lightboxPhotos = [];  // [{url, time, deltaLabel}] ascending
         let lightboxIndex = 0;
+        let appConfigUnsubscribe = null;
+        let isHibernating = false;
 
         // ─── Auth state ───
         onAuthStateChanged(auth, user => {
@@ -994,12 +1051,14 @@
 
                 initCharts();
                 loadSessions();
+                loadAppConfig();
             } else {
                 loginScreen.style.display = 'flex';
                 appEl.classList.remove('visible');
                 if (measurementsUnsubscribe) { measurementsUnsubscribe(); measurementsUnsubscribe = null; }
                 if (sessionDocUnsubscribe)   { sessionDocUnsubscribe();   sessionDocUnsubscribe   = null; }
                 if (sessionsUnsubscribe)     { sessionsUnsubscribe();     sessionsUnsubscribe     = null; }
+                if (appConfigUnsubscribe)    { appConfigUnsubscribe();    appConfigUnsubscribe    = null; }
             }
         });
 
@@ -1010,6 +1069,33 @@
 
         function initCharts() {
             if (levelChart) return; // already initialized
+            
+            const verticalLinePlugin = {
+                id: 'verticalLine',
+                beforeDraw: (chart) => {
+                    const ctx = chart.ctx;
+                    const xAxis = chart.scales.x;
+                    const yAxis = chart.scales.y;
+                    
+                    if (chart.config.data.cicloTimestamps) {
+                        ctx.save();
+                        ctx.strokeStyle = 'rgba(255, 152,  0, 0.5)';
+                        ctx.lineWidth = 1.5;
+                        ctx.setLineDash([5, 5]);
+                        
+                        chart.config.data.cicloTimestamps.forEach(ts => {
+                            const x = xAxis.getPixelForValue(new Date(ts));
+                            if (x >= xAxis.left && x <= xAxis.right) {
+                                ctx.beginPath();
+                                ctx.moveTo(x, yAxis.top);
+                                ctx.lineTo(x, yAxis.bottom);
+                                ctx.stroke();
+                            }
+                        });
+                        ctx.restore();
+                    }
+                }
+            };
 
             const levelCtx = document.getElementById('levelChart').getContext('2d');
             levelChart = new Chart(levelCtx, {
@@ -1036,6 +1122,14 @@
                         pointRadius: 10,
                         pointStyle: 'star',
                         showLine: false,
+                    }, {
+                        label: 'Meta Duplicación (100%)',
+                        data: [],
+                        borderColor: 'rgba(76, 175, 80, 0.8)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
                     }]
                 },
                 options: {
@@ -1071,7 +1165,63 @@
                             suggestedMax: 10
                         }
                     }
-                }
+                },
+                plugins: [verticalLinePlugin]
+            });
+            
+            const incCtx = document.getElementById('incrementChart').getContext('2d');
+            incrementChart = new Chart(incCtx, {
+                type: 'bar',
+                data: {
+                    datasets: [{
+                        label: 'Avance vs Anterior (%)',
+                        data: [],
+                        backgroundColor: (ctx) => {
+                            const val = ctx.raw ? ctx.raw.y : 0;
+                            return val > 0 ? 'rgba(76, 175, 80, 0.6)' : (val < 0 ? 'rgba(233, 69, 96, 0.6)' : 'rgba(255, 255, 255, 0.1)');
+                        },
+                        borderColor: (ctx) => {
+                            const val = ctx.raw ? ctx.raw.y : 0;
+                            return val > 0 ? '#4caf50' : (val < 0 ? '#e94560' : 'rgba(255, 255, 255, 0.3)');
+                        },
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(12,12,36,0.95)',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: ctx => {
+                                    const val = ctx.parsed.y;
+                                    const sign = val > 0 ? '+' : '';
+                                    return `Incremento: ${sign}${val.toFixed(1)}%`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: { unit: 'hour', displayFormats: { hour: 'HH:mm' } },
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                            ticks: { maxRotation: 0 }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                            title: { display: true, text: 'Avance %', color: '#888', font: { size: 10 } }
+                        }
+                    }
+                },
+                plugins: [verticalLinePlugin]
             });
 
             const actCtx = document.getElementById('activityChart').getContext('2d');
@@ -1090,6 +1240,15 @@
                         pointBackgroundColor: '#e8a045',
                         pointBorderColor: '#0c0c24',
                         pointBorderWidth: 2,
+                    },
+                    {
+                        label: 'Meta Duplicación (100%)',
+                        data: [],
+                        borderColor: 'rgba(76, 175, 80, 0.8)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
                     }]
                 },
                 options: {
@@ -1127,9 +1286,50 @@
                             grid: { color: 'rgba(255,255,255,0.03)' }
                         }
                     }
+                },
+                plugins: [verticalLinePlugin]
+            });
+        }
+
+        // ─── App Config Listener ───
+        function loadAppConfig() {
+            const stateRef = doc(db, 'app_config', 'state');
+            if (appConfigUnsubscribe) appConfigUnsubscribe();
+            
+            appConfigUnsubscribe = onSnapshot(stateRef, (docSnap) => {
+                const btn = document.getElementById('hibernateBtn');
+                const badge = document.getElementById('statusBadge');
+                const badgeText = document.getElementById('statusText');
+                
+                btn.style.display = 'flex';
+                if (docSnap.exists() && docSnap.data().is_hibernating) {
+                    isHibernating = true;
+                    btn.innerHTML = '🌞 Despertar';
+                    
+                    // Override the active/inactive pill styling
+                    badge.className = 'status-badge hibernating';
+                    badgeText.textContent = 'Hibernando';
+                } else {
+                    isHibernating = false;
+                    btn.innerHTML = '❄️ Refrigerar';
+                    
+                    // Restore original class (we just assume it's loading/active to let 
+                    // loadSessionDetails reset it to active or inactive based on latest measurement)
+                    badge.className = 'status-badge inactive';
+                    badgeText.textContent = 'Cargando...';
                 }
             });
         }
+
+        window.toggleHibernation = async () => {
+            const stateRef = doc(db, 'app_config', 'state');
+            try {
+                await setDoc(stateRef, { is_hibernating: !isHibernating }, { merge: true });
+            } catch (err) {
+                console.error("Error toggling hibernation:", err);
+                alert("Error al intentar cambiar el estado de hibernación.");
+            }
+        };
 
         // ─── Load sessions list ───
         async function loadSessions() {
@@ -1264,11 +1464,16 @@
                     currentGrowth != null ? (currentGrowth >= 0 ? `+${currentGrowth.toFixed(0)}%` : `${currentGrowth.toFixed(0)}%`) : '--';
 
                 if (prevGrowth != null && currentGrowth != null) {
-                    const diff = currentGrowth - prevGrowth; // always ≥ 0 (running max)
-                    const arrow = diff > 0 ? '↑' : '→';
+                    const diff = currentGrowth - prevGrowth; 
+                    let arrow = '→';
+                    let color = '#888';
+                    if (diff > 0) { arrow = '↑'; color = '#4caf50'; }
+                    else if (diff < 0) { arrow = '↓'; color = '#e94560'; }
+                    
+                    const sign = diff > 0 ? '+' : '';
                     const sub = document.getElementById('levelSub');
-                    sub.textContent = `${arrow} +${diff.toFixed(1)}%`;
-                    sub.style.color = diff > 0 ? '#4caf50' : '#888';
+                    sub.textContent = `${arrow} ${sign}${diff.toFixed(1)}%`;
+                    sub.style.color = color;
                     document.getElementById('levelVsAnterior').textContent = 'vs medición anterior';
                 }
 
@@ -1289,8 +1494,11 @@
             }
 
             // Time card
-            if (session.hora_inicio) {
-                const start = new Date(session.hora_inicio);
+            const ciclos = measurements.filter(m => m.is_ciclo === true);
+            const latestCicloTs = ciclos.length > 0 ? Object.assign(ciclos[ciclos.length - 1]).timestamp : session.hora_inicio;
+
+            if (latestCicloTs) {
+                const start = new Date(latestCicloTs);
                 const now = new Date();
                 const hours = ((now - start) / 3600000).toFixed(1);
                 document.getElementById('timeValue').textContent = `${hours}h`;
@@ -1345,7 +1553,6 @@
             if (validMeds.length === 0) return null;
 
             const growthArr = [];
-            const smoothed = [];
             const outputMeds = [];
 
             // 1. Isolate chunks between user 'ciclo' events (Feeding)
@@ -1361,21 +1568,21 @@
             });
             if (currentChunk.length > 0) chunks.push(currentChunk);
 
-            // 2. Process each chunk identically isolated from the others
+            // 2. Process each chunk
             chunks.forEach(chunk => {
                 const rawNiveles = chunk.map(m => parseFloat(m.nivel_pct));
-                // We smooth within the chunk so medians don't mix falling cliffs with growing peaks
                 const chunkSmoothed = medianSmooth(rawNiveles, 5);
-                const chunkBaseline = rawNiveles.length > 0 ? rawNiveles[0] : 0; // The true raw physical first element of the chunk is baseline
 
+                const isLatestChunk = (chunk === chunks[chunks.length - 1]);
                 chunkSmoothed.forEach((v, i) => {
-                    smoothed.push(v);
-                    growthArr.push(v - chunkBaseline);
+                    const isAbsoluteLast = isLatestChunk && (i === chunkSmoothed.length - 1);
+                    const finalVal = isAbsoluteLast ? rawNiveles[i] : (Number.isNaN(v) ? 0 : v);
+                    growthArr.push(finalVal);
                     outputMeds.push(chunk[i]);
                 });
             });
 
-            return { validMeds: outputMeds, smoothed, growthArr };
+            return { validMeds: outputMeds, growthArr };
         }
 
         function updateCharts(measurements, gd, session) {
@@ -1383,10 +1590,17 @@
             const { validMeds, growthArr } = gd;
             const bubbleMap = { 'ninguna': 0, 'pocas': 1, 'muchas': 2 };
 
-            // Set fixed 24-hour window based on session start time
+            // Set X-axis window based on GLOBAL session start time (guarantee min 24h span)
             if (session && session.hora_inicio) {
                 const startTime = new Date(session.hora_inicio).getTime();
-                const endTime = startTime + (24 * 60 * 60 * 1000); // +24 hours
+
+                let latestTime = startTime;
+                if (measurements.length > 0) {
+                    latestTime = new Date(measurements[measurements.length - 1].timestamp).getTime();
+                }
+                // Stretch the chart bounds if fermentation breaches the first 24 hours
+                const endTime = Math.max(startTime + (24 * 60 * 60 * 1000), latestTime + (1 * 60 * 60 * 1000)); 
+
                 levelChart.options.scales.x.min = startTime;
                 levelChart.options.scales.x.max = endTime;
                 activityChart.options.scales.x.min = startTime;
@@ -1397,6 +1611,11 @@
                 x: new Date(m.timestamp), y: growthArr[i]
             }));
 
+            // Pass cycle event timestamps back to plugin
+            const cicloEvents = measurements.filter(m => m.is_ciclo === true);
+            levelChart.data.cicloTimestamps = cicloEvents.map(m => m.timestamp);
+            activityChart.data.cicloTimestamps = cicloEvents.map(m => m.timestamp);
+
             // Peak marker: only show if it's the actual latest maximum
             const latestGrowth = growthArr[growthArr.length - 1];
             levelChart.data.datasets[1].data = validMeds
@@ -1406,6 +1625,10 @@
                     return growthArr[i] >= latestGrowth - 2; // only confirmed peaks
                 })
                 .map(({ m, i }) => ({ x: new Date(m.timestamp), y: growthArr[i] }));
+                
+            levelChart.data.datasets[2].data = validMeds.map(m => ({
+                x: new Date(m.timestamp), y: 100
+            }));
             levelChart.update('none');
 
             activityChart.data.datasets[0].data = measurements.map(m => ({
@@ -1413,6 +1636,29 @@
                 y: bubbleMap[m.burbujas] ?? 0
             }));
             activityChart.update('none');
+
+            // Build increment data
+            const incrementData = [];
+            for (let i = 0; i < validMeds.length; i++) {
+                const prevLevel = i > 0 ? growthArr[i - 1] : 0;
+                const currentLevel = growthArr[i];
+                incrementData.push({
+                    x: new Date(validMeds[i].timestamp),
+                    y: currentLevel - prevLevel
+                });
+            }
+            incrementChart.data.datasets[0].data = incrementData;
+            
+            if (session && session.hora_inicio) {
+                const startTime = new Date(session.hora_inicio).getTime();
+                const latestTime = measurements.length > 0 ? new Date(measurements[measurements.length - 1].timestamp).getTime() : startTime;
+                const endTime = Math.max(startTime + (24 * 60 * 60 * 1000), latestTime + (1 * 60 * 60 * 1000));
+                
+                incrementChart.options.scales.x.min = startTime;
+                incrementChart.options.scales.x.max = endTime;
+            }
+            incrementChart.data.cicloTimestamps = cicloEvents.map(m => m.timestamp);
+            incrementChart.update('none');
         }
 
         function updateLatestPhoto(latest) {
@@ -1461,9 +1707,13 @@
                     while (prevIdx >= 0 && withPhotos[prevIdx].nivel_pct == null) prevIdx--;
                     const prev = prevIdx >= 0 ? withPhotos[prevIdx] : null;
 
-                    if (prev && m.nivel_pct != null) {
-                        const delta = parseFloat(m.nivel_pct) - parseFloat(prev.nivel_pct);
-                        deltaLabel = (delta >= 0 ? '+' : '') + delta.toFixed(1) + '%';
+                    if (prev && m.nivel_pct != null && gd) {
+                        const mIdx = gd.validMeds.indexOf(m);
+                        const prevIdxInGd = gd.validMeds.indexOf(prev);
+                        if (mIdx !== -1 && prevIdxInGd !== -1) {
+                            const delta = gd.growthArr[mIdx] - gd.growthArr[prevIdxInGd];
+                            deltaLabel = (delta >= 0 ? '+' : '') + delta.toFixed(1) + '%';
+                        }
                     }
                 }
 
@@ -1580,9 +1830,12 @@
 
         // ─── Calibration overlay logic ───
         let isCalibrating = false;
-        let calibStep = 0; // 0 = not calib, 1 = wait fondo, 2 = wait tope
+        let calibStep = 0; // 1=base, 2=fondo, 3=tope, 4=izq, 5=der
+        let calibBaseY = 0;
         let calibFondoY = 0;
         let calibTopeY = 0;
+        let calibIzqX = 0;
+        let calibDerX = 0;
 
         window.startCalibration = () => {
             if (!measurementsUnsubscribe || !currentSessionId) return;
@@ -1590,47 +1843,79 @@
             calibStep = 1;
             openLightboxAt(0); // Open baseline photo
             document.getElementById('calibInstruction').style.display = 'block';
-            document.getElementById('calibInstruction').textContent = 'Haz clic en la BANDA (Nivel 0%)';
+            document.getElementById('calibInstruction').textContent = 'Paso 1: Haz clic en la SUPERFICIE (Piso del Frasco)';
             document.getElementById('calibLineTope').style.display = 'none';
             document.getElementById('calibLineFondo').style.display = 'none';
+            document.getElementById('calibLineBase').style.display = 'none';
+            document.getElementById('calibLineIzq').style.display = 'none';
+            document.getElementById('calibLineDer').style.display = 'none';
         };
 
         window.handleLightboxClick = async (event) => {
             if (!isCalibrating) return;
             const img = event.target;
             const rect = img.getBoundingClientRect();
-            // Calculate percentage from top within the actual image layout
+            // Calculate percentage from top/left within the actual image layout
             const yPct = ((event.clientY - rect.top) / rect.height) * 100;
+            const xPct = ((event.clientX - rect.left) / rect.width) * 100;
             
             if (calibStep === 1) {
+                calibBaseY = yPct;
+                const line = document.getElementById('calibLineBase');
+                line.style.top = yPct + '%';
+                line.style.display = 'block';
+                calibStep = 2;
+                document.getElementById('calibInstruction').textContent = 'Paso 2: Haz clic en la BANDA ROJA (Inicio de masa)';
+            } else if (calibStep === 2) {
                 calibFondoY = yPct;
                 const line = document.getElementById('calibLineFondo');
                 line.style.top = yPct + '%';
                 line.style.display = 'block';
-                calibStep = 2;
-                document.getElementById('calibInstruction').textContent = 'Haz clic en el TOPE MÁXIMO (Rebalse)';
-            } else if (calibStep === 2) {
+                calibStep = 3;
+                document.getElementById('calibInstruction').textContent = 'Paso 3: Haz clic en el TOPE MÁXIMO (Rebalse Y)';
+            } else if (calibStep === 3) {
                 calibTopeY = yPct;
                 const line = document.getElementById('calibLineTope');
                 line.style.top = yPct + '%';
                 line.style.display = 'block';
-                document.getElementById('calibInstruction').textContent = 'Guardando calibración...';
+                calibStep = 4;
+                document.getElementById('calibInstruction').textContent = 'Paso 4: Haz clic en el BORDE IZQUIERDO del frasco (Eje X)';
+            } else if (calibStep === 4) {
+                calibIzqX = xPct;
+                const line = document.getElementById('calibLineIzq');
+                line.style.left = xPct + '%';
+                line.style.display = 'block';
+                calibStep = 5;
+                document.getElementById('calibInstruction').textContent = 'Paso 5: Haz clic en el BORDE DERECHO del frasco (Eje X)';
+            } else if (calibStep === 5) {
+                calibDerX = xPct;
+                const line = document.getElementById('calibLineDer');
+                line.style.left = xPct + '%';
+                line.style.display = 'block';
+
+                document.getElementById('calibInstruction').textContent = 'Guardando calibración 5-Puntos OpenCV...';
                 
                 try {
-                    // Send bounds to Firebase
-                    await updateDoc(doc(db, "sesiones", currentSessionId), {
+                    const sessionRef = doc(db, 'sesiones', currentSessionId);
+                    await updateDoc(sessionRef, {
+                        base_y_pct: calibBaseY,
                         fondo_y_pct: calibFondoY,
                         tope_y_pct: calibTopeY,
+                        izq_x_pct: calibIzqX,
+                        der_x_pct: calibDerX,
                         is_calibrated: 1
                     });
                     
-                    document.getElementById('calibInstruction').textContent = '¡Calibración guardada!';
+                    document.getElementById('calibInstruction').textContent = '¡Calibración OpenCV guardada!';
                     setTimeout(() => {
                         isCalibrating = false;
                         calibStep = 0;
                         document.getElementById('calibInstruction').style.display = 'none';
+                        document.getElementById('calibLineBase').style.display = 'none';
                         document.getElementById('calibLineFondo').style.display = 'none';
                         document.getElementById('calibLineTope').style.display = 'none';
+                        document.getElementById('calibLineIzq').style.display = 'none';
+                        document.getElementById('calibLineDer').style.display = 'none';
                         closeLightbox();
                     }, 1500);
                     
