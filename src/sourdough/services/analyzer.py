@@ -35,7 +35,10 @@ TAREA: Mide la posición de la SUPERFICIE de la masa en el frasco.
 {corrections_context}
 MÉTODO:
 1. Busca la banda elástica roja como REFERENCIA visual.
-2. Identifica dónde está la línea horizontal de la superficie superior de la MASA MADRE.
+2. Identifica dónde está la superficie de la MASA SÓLIDA (no la espuma).
+   IMPORTANTE: La masa madre suele tener burbujas grandes en la parte superior.
+   NO midas el tope de las burbujas — mide el último nivel continuo de masa sólida,
+   donde termina el cuerpo denso y empiezan las burbujas grandes o la espuma.
 3. Usa las marcas/rayitas impresas en el vidrio para estimar la posición.
 4. NO uses los píxeles de la imagen — la perspectiva deforma. Usa las marcas físicas del frasco.
 
