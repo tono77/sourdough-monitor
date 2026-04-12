@@ -519,123 +519,156 @@ body::before {
     .container { padding: 12px; }
 }
 
-/* ─── Responsive: Mobile (Pixel 10 / ~412px) ─── */
+/* ─── Chart header (shared desktop + mobile) ─── */
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 8px;
+}
+
+.chart-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.chart-actions .btn-calib {
+    padding: 4px 10px;
+    font-size: 11px;
+}
+
+/* ─── Responsive: Mobile (Pixel 10 / ~480px) ─── */
 @media (max-width: 480px) {
     body {
         -webkit-text-size-adjust: 100%;
         padding-top: env(safe-area-inset-top);
     }
 
-    .container { padding: 10px; }
+    .container { padding: 8px; }
 
-    /* Header: compact */
+    /* Header: single row, compact */
     .header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-        padding: 10px 0 12px;
+        flex-direction: row;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 8px 0 10px;
     }
 
-    .header-left {
-        justify-content: center;
-    }
-
-    .header h1 { font-size: 18px; }
-    .logo { font-size: 24px; }
+    .header h1 { font-size: 16px; }
+    .logo { font-size: 22px; }
 
     .header-right {
         flex-wrap: wrap;
-        justify-content: center;
-        gap: 8px;
+        gap: 6px;
+        font-size: 11px;
     }
 
-    .user-info { order: 10; }
+    .realtime-badge { display: none; }
     .user-name { display: none; }
+    .user-avatar { width: 26px; height: 26px; }
+    #signOutBtn { font-size: 10px; padding: 3px 8px; }
+    .status-badge { font-size: 9px; padding: 3px 8px; border-radius: 12px; }
+    .timer { font-size: 12px; }
+    .btn-hibernate { font-size: 9px; padding: 4px 8px; }
 
-    .status-badge { font-size: 10px; padding: 4px 10px; }
-    .timer { font-size: 13px; }
-
-    /* Top grid: 2x2 metrics + photo below */
+    /* ─── Metrics: 2x2 grid, photo SEPARATE below ─── */
     .top-dash-grid {
-        grid-template-columns: repeat(2, 1fr);
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         gap: 8px;
     }
 
-    .metric-card { padding: 14px 10px; }
-    .metric-value { font-size: 26px; }
-    .metric-card.bubbles .metric-value,
-    .metric-card.texture .metric-value { font-size: 22px; }
-    .metric-label { font-size: 9px; }
+    .metric-card {
+        padding: 12px 8px;
+        min-height: 80px;
+    }
+
+    .metric-value { font-size: 28px !important; }
+    .metric-label { font-size: 10px; }
     .metric-sub { font-size: 9px; }
 
     .btn-edit-metric {
-        width: 24px; height: 24px;
-        font-size: 12px;
-        top: 6px; right: 6px;
+        width: 22px; height: 22px;
+        font-size: 11px;
+        top: 4px; right: 4px;
     }
 
-    /* Photo card: full width below metrics */
+    /* Photo: full width, limited height */
     .photo-card {
         grid-column: 1 / -1;
     }
 
-    .photo-frame { min-height: 200px; }
+    .photo-frame {
+        min-height: 180px !important;
+        max-height: 250px;
+    }
+
+    .photo-frame img {
+        max-height: 250px;
+    }
 
     /* Notes bar */
-    .notes-bar {
-        padding: 10px 14px;
-        gap: 8px;
-    }
-    .notes-text { font-size: 12px; }
+    .notes-bar { padding: 10px 12px; gap: 8px; }
+    .notes-text { font-size: 12px; line-height: 1.4; }
 
-    /* Peak / Calib banners */
+    /* Banners */
     .peak-banner, .calib-banner {
         flex-direction: column;
-        align-items: flex-start;
         gap: 8px;
-        padding: 12px 14px;
+        padding: 10px 12px;
+    }
+    .peak-icon { font-size: 20px; }
+    .peak-text h3 { font-size: 12px; }
+    .peak-text p { font-size: 10px; }
+
+    /* ─── Charts ─── */
+    .chart-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
     }
 
-    .peak-icon { font-size: 22px; }
-    .peak-text h3 { font-size: 13px; }
-    .peak-text p { font-size: 11px; }
-
-    /* Charts: taller for readability */
-    .chart-container { height: 240px; }
-    .activity-chart-container { height: 120px; }
-
-    /* Chart toolbar buttons */
-    .card .btn-calib {
-        padding: 4px 8px;
-        font-size: 9px;
+    .chart-actions {
+        width: 100%;
     }
-    .card-title { font-size: 10px; letter-spacing: 0.5px; }
 
-    /* Sessions chips: scrollable row */
+    .chart-actions .btn-calib {
+        flex: 1;
+        text-align: center;
+        font-size: 10px;
+        padding: 6px 8px;
+    }
+
+    .card-title { font-size: 10px; letter-spacing: 0.3px; }
+    .chart-container { height: 220px; }
+    .activity-chart-container { height: 100px; }
+
+    /* Cards */
+    .card { padding: 12px; border-radius: 12px; }
+
+    /* Sessions */
     .sessions-grid { gap: 6px; }
-    .session-chip { padding: 6px 12px; font-size: 11px; }
+    .session-chip { padding: 6px 10px; font-size: 10px; }
+    .chip-meta { font-size: 9px; }
 
-    /* Gallery thumbs: smaller */
-    .gallery-thumb { width: 90px; }
-    .gallery-thumb img { height: 110px; }
-    .gallery-label { font-size: 8px; }
+    /* Gallery */
+    .gallery-thumb { width: 80px; }
+    .gallery-thumb img { height: 100px; }
+    .gallery-label { font-size: 8px; padding: 3px 4px; }
 
-    /* Cards: less padding */
-    .card { padding: 14px; border-radius: 14px; }
-
-    /* Login: tighter */
+    /* Login */
     .login-card {
-        padding: 32px 24px;
-        border-radius: 20px;
-        width: 95%;
+        padding: 28px 20px;
+        border-radius: 18px;
+        width: 92%;
     }
-    .login-logo { font-size: 48px; }
-    .login-card h1 { font-size: 22px; }
-    .login-card p { font-size: 13px; margin-bottom: 24px; }
+    .login-logo { font-size: 44px; }
+    .login-card h1 { font-size: 20px; }
+    .login-card p { font-size: 12px; margin-bottom: 20px; }
 
     /* Footer */
-    .footer { font-size: 10px; padding: 14px; }
-
-    /* Hibernate button */
-    .btn-hibernate { font-size: 10px; padding: 5px 10px; }
+    .footer { font-size: 9px; padding: 12px; }
 }

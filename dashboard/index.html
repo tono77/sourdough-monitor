@@ -133,11 +133,11 @@
             <!-- Charts -->
             <div class="charts-grid">
                 <div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <div class="card-title" style="margin-bottom:0;">📈 Nivel de Fermentación (Línea de Vida 24 Hrs)</div>
-                        <div>
-                            <button class="btn-calib" style="background:#4caf50; padding:4px 12px; font-size:11px; margin-right:8px;" onclick="startCalibration()" title="Ajusta los límites del análisis CV">📐 Calibrar Visión</button>
-                            <button class="btn-calib" style="background:#ff6b35; padding:4px 12px; font-size:11px;" onclick="promptNewCycle()" title="Marca el punto y resetea el nivel a 0% para el gráfico">🔄 Alimentar (Nuevo Ciclo)</button>
+                    <div class="chart-header">
+                        <div class="card-title" style="margin-bottom:0;">📈 Nivel de Fermentación</div>
+                        <div class="chart-actions">
+                            <button class="btn-calib" style="background:#4caf50;" onclick="startCalibration()">📐 Calibrar</button>
+                            <button class="btn-calib" style="background:#ff6b35;" onclick="promptNewCycle()">🔄 Nuevo Ciclo</button>
                         </div>
                     </div>
                     <div class="chart-container">
