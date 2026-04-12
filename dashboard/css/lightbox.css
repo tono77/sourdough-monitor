@@ -156,3 +156,36 @@
     display: none;
     pointer-events: none;
 }
+
+/* ─── Responsive: Mobile ─── */
+@media (max-width: 480px) {
+    .lightbox img {
+        max-width: 95vw;
+        max-height: 70vh;
+    }
+
+    .lb-btn {
+        width: 40px; height: 40px;
+        font-size: 22px;
+    }
+
+    .lb-btn.close-lb {
+        top: 10px; right: 10px;
+        font-size: 16px;
+    }
+
+    .lb-info { font-size: 11px; }
+    .lb-count { font-size: 9px; }
+
+    .lightbox-controls { gap: 14px; }
+
+    .calib-instruction {
+        font-size: 11px;
+        padding: 8px 14px;
+        top: 10px;
+        max-width: 90vw;
+        text-align: center;
+    }
+
+    .gallery-grid { padding: 2px 0 10px; }
+}
