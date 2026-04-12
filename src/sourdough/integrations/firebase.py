@@ -93,14 +93,16 @@ class FirebaseClient:
             doc_data = {
                 "timestamp": measurement_data.get("timestamp", ""),
                 "nivel_pct": measurement_data.get("nivel_pct"),
-                "nivel_px": measurement_data.get("nivel_px"),
                 "burbujas": measurement_data.get("burbujas", ""),
                 "textura": measurement_data.get("textura", ""),
                 "notas": measurement_data.get("notas", ""),
                 "es_peak": measurement_data.get("es_peak", 0),
                 "altura_y_pct": measurement_data.get("altura_y_pct"),
                 "confianza": measurement_data.get("confianza"),
-                "modo_analisis": measurement_data.get("modo_analisis", "single"),
+                "modo_analisis": measurement_data.get("modo_analisis"),
+                "altura_pct": measurement_data.get("altura_pct"),
+                "crecimiento_pct": measurement_data.get("crecimiento_pct"),
+                "fuente": measurement_data.get("fuente"),
                 "foto_base64": foto_base64,
             }
 

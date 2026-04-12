@@ -24,53 +24,31 @@ log = logging.getLogger(__name__)
 # Prompts (Spanish)
 # ---------------------------------------------------------------------------
 
-PROMPT_COMPARATIVE = """Eres un experto en análisis visual de fermentación de masa madre.
+PROMPT_UNIFIED = """Eres un experto midiendo la altura de masa madre en un frasco de vidrio.
 
-Se te muestran DOS fotos del MISMO frasco{tiempo_txt}:
-- IMAGEN 1: Foto INICIAL del día.
-- IMAGEN 2: Foto ACTUAL.
+{baseline_context}
+
+TAREA: Mide la posición de la SUPERFICIE de la masa en el frasco.
+- 0% = el FONDO INTERIOR del frasco (vacío total)
+- 100% = la TAPA del frasco (lleno hasta arriba)
 
 {corrections_context}
-MÉTODO DE MEDICIÓN (sigue exactamente):
-1. ESPACIO DE COORDENADAS: En esta imagen, asume como ser humano que 0% es la BASE INFERIOR del frasco (vacío total) y 100% es la TAPA SUPERIOR del frasco (lleno total).
-2. Encuentra la línea horizontal exacta de la superficie superior de la MASA MADRE.
-3. Llama A = El volumen tridimensional inicial marcado por la banda roja en la foto 1. Observa qué "rayita" o marca del vidrio abarca.
-4. Llama B = El volumen tridimensional actual de la masa en la foto 2. Guiate estrictamente por las "rayitas" horizontales impresas en el frasco.
-5. nivel_pct = Calcula mentalmente el % de crecimiento volumétrico. ¡Si el volumen se duplicó, es 100%! Por ejemplo, si en la foto 1 la masa ocupaba 2 rayitas del frasco, y en la foto 2 subió hasta ocupar 4 rayitas, ¡eso es exactamente un 100% de crecimiento! Si ocupa 5 rayitas, es un 150%.
-6. ¡IMPORTANTÍSIMO! No uses regla de tres con los píxeles de la foto (la perspectiva deforma la imagen y hace que las rayitas de arriba parezcan más pequeñas). Usa las rayas impresas físicas en el vidrio como tu única regla absoluta. Mide la SUPERFICIE DE LA MASA. Responde en "nivel_pct" directamente tu % estimado final.
+MÉTODO:
+1. Busca la banda elástica roja como REFERENCIA visual.
+2. Identifica dónde está la línea horizontal de la superficie superior de la MASA MADRE.
+3. Usa las marcas/rayitas impresas en el vidrio para estimar la posición.
+4. NO uses los píxeles de la imagen — la perspectiva deforma. Usa las marcas físicas del frasco.
 
 Responde SOLO con JSON válido:
 {{
-  "nivel_pct": <tu % de crecimiento calculado guiándote por las marcas del frasco>,
-  "altura_inicial_pct": <A: tu estimación mental del nivel original>,
-  "altura_actual_pct": <B: % de frasco lleno en foto 2>,
+  "altura_pct": <posición de la superficie de la masa, 0-100, ej: 45.0>,
+  "banda_pct": <posición de la banda elástica roja, 0-100, ej: 30.0>,
   "burbujas": "<ninguna|pocas|muchas>",
   "textura": "<lisa|rugosa|muy_activa>",
-  "notas": "<observación en español, concéntrate en si la MASA superó la banda elástica, máx 100 chars>",
-  "visible_marca": <true|false>,
+  "notas": "<observación breve en español, máx 80 chars>",
   "confianza": <1-5>
-}}"""
-
-PROMPT_SINGLE = """Eres un analizador experto de masa madre (sourdough starter).
-Analiza esta foto del frasco de fermento.
-{corrections_context}
-MÉTODO DE MEDICIÓN:
-1. ESPACIO DE COORDENADAS: En la imagen visualizada, asume tu intuición habitual: 0% es la BASE plana del frasco de cristal (vacío) y 100% es el BORDE SUPERIOR de la tapa (lleno).
-2. Vas a ver tu referencia: Una banda elástica (generalmente roja) abrazando el frasco.
-3. Encuentra la línea horizontal donde reposa la superficie superior de la MASA real dentro del vidrio.
-4. Estima la posición Y (altura) de la BANDA ELASTICA en este espacio 0-100%.
-5. Estima la posición Y (altura) de la SUPERFICIE DE LA MASA en este espacio 0-100%.
-
-Responde SOLO con JSON válido:
-{{
-  "altura_y_pct": <% del frasco donde está la superficie actual del fermento (EJEMPLO: 42.5)>,
-  "altura_banda_pct": <% del frasco donde está la banda/cinta>,
-  "burbujas": "<ninguna|pocas|muchas>",
-  "textura": "<lisa|rugosa|muy_activa>",
-  "notas": "<observación en español, máx 100 chars>",
-  "visible_marca": <true|false>
 }}
-Si no puedes ver el frasco, usa altura_y_pct: null."""
+Si no puedes ver el frasco claramente, usa altura_pct: null."""
 
 
 # ---------------------------------------------------------------------------
@@ -137,8 +115,8 @@ def _parse_response(text: str) -> dict:
 # OpenCV fallback
 # ---------------------------------------------------------------------------
 
-def _run_opencv(photo_path: str, calibration: CalibrationBounds) -> Optional[float]:
-    """Run deterministic CV analysis. Returns altura_y_pct or None."""
+def run_opencv(photo_path: str, calibration: CalibrationBounds) -> Optional[float]:
+    """Run deterministic CV analysis. Returns surface position (0-100% of jar) or None."""
     try:
         import cv2
         import numpy as np
@@ -222,12 +200,12 @@ def analyze_photo(
     config: AppConfig,
     photo_path: str,
     baseline_foto_path: str | None = None,
-    calibration: CalibrationBounds | None = None,
     corrections_file: Path | None = None,
 ) -> dict:
-    """Analyze a fermentation photo with Claude Vision + optional OpenCV fallback.
+    """Analyze a fermentation photo with Claude Vision.
 
-    Returns a dict with analysis fields (nivel_pct, burbujas, textura, notas, etc.)
+    Returns a dict with: altura_pct, banda_pct, burbujas, textura, notas, confianza.
+    OpenCV runs separately via run_opencv() and fusion happens in measurement.py.
     """
     api_key = config.anthropic_api_key
     if not api_key:
@@ -247,22 +225,23 @@ def analyze_photo(
     if corrections_file:
         corr_ctx = _load_corrections(corrections_file)
 
-    # Decide mode
-    use_comparative = (
+    # Decide if we have a baseline photo for comparative mode
+    use_baseline = (
         baseline_foto_path is not None
         and Path(baseline_foto_path).exists()
         and str(baseline_foto_path) != str(photo_path)
     )
 
-    if use_comparative:
+    if use_baseline:
+        baseline_ctx = "Se muestran 2 fotos: IMAGEN 1 es la referencia inicial del día, IMAGEN 2 es la actual."
         baseline_to_encode = str(baseline_foto_path)
         if os.path.getsize(baseline_foto_path) > 4 * 1024 * 1024:
             baseline_to_encode = _compress_image(baseline_foto_path)
         baseline_b64 = _encode_image(baseline_to_encode)
         baseline_media = _detect_media_type(baseline_foto_path)
 
-        prompt = PROMPT_COMPARATIVE.format(
-            tiempo_txt="", corrections_context=corr_ctx,
+        prompt = PROMPT_UNIFIED.format(
+            baseline_context=baseline_ctx, corrections_context=corr_ctx,
         )
         content = [
             {"type": "image", "source": {"type": "base64", "media_type": baseline_media, "data": baseline_b64}},
@@ -270,7 +249,10 @@ def analyze_photo(
             {"type": "text", "text": prompt},
         ]
     else:
-        prompt = PROMPT_SINGLE.format(corrections_context=corr_ctx)
+        prompt = PROMPT_UNIFIED.format(
+            baseline_context="Se muestra 1 foto del frasco.",
+            corrections_context=corr_ctx,
+        )
         content = [
             {"type": "image", "source": {"type": "base64", "media_type": current_media, "data": current_b64}},
             {"type": "text", "text": prompt},
@@ -300,20 +282,9 @@ def analyze_photo(
     except Exception as e:
         log.warning("Failed to parse Claude response: %s", e)
         analysis = {
-            "burbujas": "Pocas",
-            "textura": "Estándar",
-            "notas": "Modo Clínico: Medición Matemática por OpenCV (IA inactiva por error de red)",
+            "burbujas": "pocas",
+            "textura": "lisa",
+            "notas": "Medición por OpenCV (Claude no disponible)",
         }
-
-    # OpenCV fallback injection
-    if calibration and calibration.is_complete:
-        try:
-            cv_altura = _run_opencv(photo_path, calibration)
-            if cv_altura is not None:
-                analysis["altura_y_pct"] = cv_altura
-                analysis["modo_analisis"] = "OpenCV + Sonnet"
-                analysis["visible_marca"] = True
-        except Exception as e:
-            log.warning("OpenCV processing error: %s", e)
 
     return analysis

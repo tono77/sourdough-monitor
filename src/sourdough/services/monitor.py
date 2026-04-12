@@ -21,7 +21,8 @@ from sourdough.db.repository import (
 from sourdough.models import CalibrationBounds, Session
 from sourdough.services import capture as capture_svc
 from sourdough.services import charting, peak_detector, timelapse
-from sourdough.services.analyzer import analyze_photo
+from sourdough.services.analyzer import analyze_photo, run_opencv
+from sourdough.services.measurement import compute_measurement
 from sourdough.services.notifier import send_peak_alert, send_update_email
 
 log = logging.getLogger(__name__)
@@ -145,23 +146,34 @@ class Monitor:
         # Corrections file
         corrections_file = self.config.data_dir / "dataset_corrections.json"
 
-        # Analyze
-        log.info("Enviando foto a motor IA...")
+        # Analyze: Claude Vision
+        log.info("Enviando foto a Claude Vision...")
         try:
-            analysis = analyze_photo(
+            claude_result = analyze_photo(
                 config=self.config,
                 photo_path=photo_path,
                 baseline_foto_path=baseline_foto,
-                calibration=session.calibration if session.is_calibrated else None,
                 corrections_file=corrections_file if corrections_file.exists() else None,
             )
-            log.info("Resultado: %s", json.dumps(analysis, indent=2, ensure_ascii=False))
+            log.info("Claude: %s", json.dumps(claude_result, indent=2, ensure_ascii=False))
+
+            # Analyze: OpenCV (independent)
+            cv_altura = None
+            calibration = session.calibration if session.is_calibrated else None
+            if calibration and calibration.is_complete:
+                try:
+                    cv_altura = run_opencv(photo_path, calibration)
+                    if cv_altura is not None:
+                        log.info("OpenCV: altura=%.1f%%", cv_altura)
+                except Exception as e:
+                    log.warning("OpenCV error: %s", e)
+
+            # Fuse measurements and calculate growth
+            baseline_altura = measurements.get_baseline_altura(session.id)
+            merged = compute_measurement(claude_result, cv_altura, baseline_altura)
 
             # Save to DB
-            measurement = measurements.save(
-                session.id, photo_path, analysis,
-                session_calibration=session.calibration if session.is_calibrated else None,
-            )
+            measurement = measurements.save(session.id, photo_path, merged)
 
             # Sync to Firebase
             if self._firebase:

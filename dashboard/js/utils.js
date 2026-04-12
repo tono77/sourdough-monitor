@@ -11,9 +11,13 @@ export function medianSmooth(values, window = 5) {
     });
 }
 
-// Build smoothed cumulative growth data for display with Multi-Cycle support
+// Build growth data for display with Multi-Cycle support.
+// v2: uses crecimiento_pct (pre-calculated by backend) when available,
+// falls back to nivel_pct with median smoothing for legacy data.
 export function buildGrowthData(measurements) {
-    const validMeds = measurements.filter(m => m.nivel_pct != null || m.is_ciclo === true);
+    const validMeds = measurements.filter(m =>
+        m.crecimiento_pct != null || m.nivel_pct != null || m.is_ciclo === true
+    );
     if (validMeds.length === 0) return null;
 
     const growthArr = [];
@@ -25,7 +29,7 @@ export function buildGrowthData(measurements) {
     validMeds.forEach(m => {
         if (m.is_ciclo === true) {
             if (currentChunk.length > 0) chunks.push(currentChunk);
-            currentChunk = []; // reset for the new chapter
+            currentChunk = [];
         } else {
             currentChunk.push(m);
         }
@@ -34,16 +38,28 @@ export function buildGrowthData(measurements) {
 
     // 2. Process each chunk
     chunks.forEach(chunk => {
-        const rawNiveles = chunk.map(m => parseFloat(m.nivel_pct));
-        const chunkSmoothed = medianSmooth(rawNiveles, 5);
+        // Prefer crecimiento_pct (v2 field, pre-computed growth)
+        const hasV2 = chunk.some(m => m.crecimiento_pct != null);
 
-        const isLatestChunk = (chunk === chunks[chunks.length - 1]);
-        chunkSmoothed.forEach((v, i) => {
-            const isAbsoluteLast = isLatestChunk && (i === chunkSmoothed.length - 1);
-            const finalVal = isAbsoluteLast ? rawNiveles[i] : (Number.isNaN(v) ? 0 : v);
-            growthArr.push(finalVal);
-            outputMeds.push(chunk[i]);
-        });
+        if (hasV2) {
+            // v2 path: use backend-calculated growth directly
+            chunk.forEach(m => {
+                const val = m.crecimiento_pct != null ? parseFloat(m.crecimiento_pct) : 0;
+                growthArr.push(val);
+                outputMeds.push(m);
+            });
+        } else {
+            // Legacy path: smooth nivel_pct values
+            const rawNiveles = chunk.map(m => parseFloat(m.nivel_pct));
+            const chunkSmoothed = medianSmooth(rawNiveles, 5);
+            const isLatestChunk = (chunk === chunks[chunks.length - 1]);
+            chunkSmoothed.forEach((v, i) => {
+                const isAbsoluteLast = isLatestChunk && (i === chunkSmoothed.length - 1);
+                const finalVal = isAbsoluteLast ? rawNiveles[i] : (Number.isNaN(v) ? 0 : v);
+                growthArr.push(finalVal);
+                outputMeds.push(chunk[i]);
+            });
+        }
     });
 
     return { validMeds: outputMeds, growthArr };

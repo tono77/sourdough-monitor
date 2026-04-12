@@ -186,6 +186,16 @@ class MeasurementRepository:
         ).fetchone()
         return float(row[0]) if row else None
 
+    def get_baseline_altura(self, session_id: int) -> Optional[float]:
+        """Get the first measurement's fused surface position for growth calculation."""
+        row = self._conn.execute(
+            "SELECT altura_pct FROM mediciones "
+            "WHERE sesion_id = ? AND altura_pct IS NOT NULL "
+            "ORDER BY id ASC LIMIT 1",
+            (session_id,),
+        ).fetchone()
+        return float(row[0]) if row else None
+
     def get_baseline_foto(self, session_id: int) -> Optional[str]:
         row = self._conn.execute(
             "SELECT foto_path FROM mediciones "
@@ -214,47 +224,30 @@ class MeasurementRepository:
 
     # -- Mutations ----------------------------------------------------------
 
-    def save(self, session_id: int, foto_path: str, analysis: dict,
-             session_calibration: Optional[CalibrationBounds] = None) -> Measurement:
-        """Save a measurement from analysis results. Computes nivel_pct if calibrated."""
+    def save(self, session_id: int, foto_path: str, merged: dict) -> Measurement:
+        """Save a pre-computed measurement from measurement.py fusion service."""
         timestamp = datetime.now().isoformat()
-
-        altura = analysis.get("altura_y_pct") or analysis.get("altura_actual_pct")
-        if altura is not None:
-            altura = float(altura)
-
-        nivel_pct = analysis.get("nivel_pct")
-
-        # Mathematical fallback: OpenCV triangulation when Claude drops nivel_pct
-        if (nivel_pct is None
-                and session_calibration is not None
-                and session_calibration.is_complete
-                and altura is not None
-                and session_calibration.fondo_y_pct is not None
-                and session_calibration.base_y_pct is not None):
-            fondo = session_calibration.fondo_y_pct
-            base = session_calibration.base_y_pct
-            if base != fondo:
-                val = (fondo - altura) / (base - fondo) * 100
-                nivel_pct = round(max(-50, min(500, val)), 1)
 
         self._conn.execute(
             "INSERT INTO mediciones "
-            "(sesion_id, timestamp, foto_path, nivel_pct, nivel_px, "
-            " burbujas, textura, notas, confianza, modo_analisis, altura_y_pct) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "(sesion_id, timestamp, foto_path, nivel_pct, "
+            " burbujas, textura, notas, confianza, modo_analisis, "
+            " altura_y_pct, altura_pct, crecimiento_pct, fuente) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 session_id,
                 timestamp,
                 str(foto_path),
-                nivel_pct,
-                analysis.get("nivel_px"),
-                analysis.get("burbujas"),
-                analysis.get("textura"),
-                analysis.get("notas"),
-                analysis.get("confianza"),
-                analysis.get("_modo", "single"),
-                altura,
+                merged.get("nivel_pct"),
+                merged.get("burbujas"),
+                merged.get("textura"),
+                merged.get("notas"),
+                merged.get("confianza"),
+                merged.get("fuente"),
+                merged.get("altura_y_pct"),
+                merged.get("altura_pct"),
+                merged.get("crecimiento_pct"),
+                merged.get("fuente"),
             ),
         )
         self._conn.execute(
@@ -267,14 +260,16 @@ class MeasurementRepository:
             sesion_id=session_id,
             timestamp=timestamp,
             foto_path=str(foto_path),
-            nivel_pct=nivel_pct,
-            nivel_px=analysis.get("nivel_px"),
-            burbujas=analysis.get("burbujas", ""),
-            textura=analysis.get("textura", ""),
-            notas=analysis.get("notas", ""),
-            confianza=analysis.get("confianza"),
-            modo_analisis=analysis.get("_modo", "single"),
-            altura_y_pct=altura,
+            nivel_pct=merged.get("nivel_pct"),
+            burbujas=merged.get("burbujas", ""),
+            textura=merged.get("textura", ""),
+            notas=merged.get("notas", ""),
+            confianza=merged.get("confianza"),
+            modo_analisis=merged.get("fuente"),
+            altura_y_pct=merged.get("altura_y_pct"),
+            altura_pct=merged.get("altura_pct"),
+            crecimiento_pct=merged.get("crecimiento_pct"),
+            fuente=merged.get("fuente"),
         )
 
     def mark_peak(self, session_id: int, measurement_id: int,

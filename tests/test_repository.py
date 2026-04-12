@@ -131,24 +131,24 @@ class TestMeasurementRepository:
 
         assert repo.peak_exists(session.id)
 
-    def test_calibrated_nivel_fallback(self, db_conn):
-        """When nivel_pct is None but calibration exists, compute from altura_y_pct."""
+    def test_saves_v2_fields(self, db_conn):
+        """Repository stores altura_pct, crecimiento_pct, fuente from merged dict."""
         session = self._make_session(db_conn)
-        s_repo = SessionRepository(db_conn)
-        calib = CalibrationBounds(
-            fondo_y_pct=50.0, tope_y_pct=10.0,
-            base_y_pct=90.0, izq_x_pct=20.0, der_x_pct=80.0,
-        )
-        s_repo.update_calibration(session.id, calib)
-
         m_repo = MeasurementRepository(db_conn)
+
         m = m_repo.save(session.id, "/photos/cv.jpg", {
-            "altura_y_pct": 30.0,  # between tope (10) and base (90)
+            "altura_pct": 45.0,
+            "crecimiento_pct": 50.0,
+            "fuente": "fusionado",
+            "nivel_pct": 50.0,
+            "altura_y_pct": 45.0,
             "burbujas": "pocas",
             "textura": "rugosa",
-        }, session_calibration=calib)
+        })
 
-        # nivel_pct should be computed: (50 - 30) / (90 - 50) * 100 = 50.0
+        assert m.altura_pct == 45.0
+        assert m.crecimiento_pct == 50.0
+        assert m.fuente == "fusionado"
         assert m.nivel_pct == 50.0
 
     def test_get_recent(self, db_conn):

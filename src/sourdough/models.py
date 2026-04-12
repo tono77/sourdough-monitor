@@ -80,6 +80,10 @@ class Measurement:
     confianza: Optional[int] = None
     modo_analisis: Optional[str] = None
     altura_y_pct: Optional[float] = None
+    # v2 measurement fields
+    altura_pct: Optional[float] = None        # fused surface position (0-100% of jar)
+    crecimiento_pct: Optional[float] = None   # volumetric growth from baseline
+    fuente: Optional[str] = None              # "claude" | "opencv" | "fusionado"
 
     @classmethod
     def from_row(cls, row: dict) -> "Measurement":
@@ -98,6 +102,9 @@ class Measurement:
             confianza=row.get("confianza"),
             modo_analisis=row.get("modo_analisis"),
             altura_y_pct=row.get("altura_y_pct"),
+            altura_pct=row.get("altura_pct"),
+            crecimiento_pct=row.get("crecimiento_pct"),
+            fuente=row.get("fuente"),
         )
 
     def to_dict(self) -> dict:
@@ -114,4 +121,7 @@ class Measurement:
             "confianza": self.confianza,
             "modo_analisis": self.modo_analisis,
             "altura_y_pct": self.altura_y_pct,
+            "altura_pct": self.altura_pct,
+            "crecimiento_pct": self.crecimiento_pct,
+            "fuente": self.fuente,
         }
