@@ -272,6 +272,44 @@ class MeasurementRepository:
             fuente=merged.get("fuente"),
         )
 
+    def apply_corrections(self, session_id: int, corrections: list[dict]) -> int:
+        """Apply manual corrections from Firestore to local DB labels.
+
+        Matches corrections to measurements by timestamp and updates
+        altura_pct so the ML model can learn from ground truth.
+
+        Returns the number of measurements updated.
+        """
+        updated = 0
+        for corr in corrections:
+            ts = corr.get("timestamp")
+            nivel = corr.get("nivel_pct")
+            if not ts or nivel is None:
+                continue
+
+            # Match by timestamp prefix (Firestore IDs replace : with -)
+            ts_clean = ts.replace("-", ":").replace(".", ":")
+            row = self._conn.execute(
+                "SELECT id, altura_pct FROM mediciones "
+                "WHERE sesion_id = ? AND timestamp LIKE ?",
+                (session_id, ts_clean[:16] + "%"),
+            ).fetchone()
+
+            if row:
+                # If correction has altura_y_pct, use that directly as ground truth
+                altura = corr.get("altura_y_pct") or corr.get("altura_pct")
+                if altura is not None:
+                    self._conn.execute(
+                        "UPDATE mediciones SET altura_pct = ?, nivel_pct = ?, "
+                        "fuente = 'manual' WHERE id = ?",
+                        (float(altura), float(nivel), row[0]),
+                    )
+                    updated += 1
+
+        if updated:
+            self._conn.commit()
+        return updated
+
     def mark_peak(self, session_id: int, measurement_id: int,
                   nivel: float, timestamp: str) -> None:
         """Flag a measurement as the session peak."""

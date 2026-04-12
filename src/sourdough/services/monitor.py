@@ -136,7 +136,7 @@ class Monitor:
         # Pull calibration from Firebase
         if self._firebase:
             self._sync_calibration(session, sessions)
-            self._sync_corrections(session)
+            self._sync_corrections(session, measurements)
 
         # Refresh session after potential calibration update
         session = sessions.get_by_id(session.id)
@@ -287,14 +287,22 @@ class Monitor:
         except Exception as e:
             log.warning("Failed to pull calibration: %s", e)
 
-    def _sync_corrections(self, session):
+    def _sync_corrections(self, session, measurements=None):
         try:
             corrections = self._firebase.pull_corrections(session.id)
             if corrections:
+                # Save for Claude few-shot learning
                 corrections_file = self.config.data_dir / "dataset_corrections.json"
                 corrections_file.parent.mkdir(exist_ok=True)
                 with open(corrections_file, "w") as f:
                     json.dump(corrections, f, indent=2)
+
+                # Apply to local DB for ML training
+                if measurements:
+                    updated = measurements.apply_corrections(session.id, corrections)
+                    if updated:
+                        log.info("%d correcciones aplicadas a DB local (ML training)", updated)
+
                 log.info("%d correcciones manuales cargadas", len(corrections))
         except Exception as e:
             log.warning("Failed to pull corrections: %s", e)
