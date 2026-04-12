@@ -10,21 +10,24 @@ from typing import Optional
 
 log = logging.getLogger(__name__)
 
-# OpenCV weight when calibration is available (fixed)
+# Weights for fusion (higher = more trusted)
 CV_WEIGHT = 3.0
+ML_WEIGHT = 5.0
 
 
 def compute_measurement(
     claude_result: dict,
     cv_altura: float | None,
     baseline_altura: float | None,
+    ml_altura: float | None = None,
 ) -> dict:
-    """Fuse Claude + OpenCV readings and compute growth.
+    """Fuse Claude + OpenCV + ML readings and compute growth.
 
     Args:
         claude_result: Raw dict from Claude Vision analysis.
         cv_altura: OpenCV surface position (0-100% of jar), or None.
         baseline_altura: First measurement's altura_pct for this session.
+        ml_altura: ML model surface position (0-100% of jar), or None.
 
     Returns:
         Dict with standardized fields ready for DB storage.
@@ -33,7 +36,7 @@ def compute_measurement(
     claude_altura = _extract_claude_altura(claude_result)
     claude_confianza = claude_result.get("confianza")
 
-    altura_pct, fuente = _fuse(claude_altura, claude_confianza, cv_altura)
+    altura_pct, fuente = _fuse(claude_altura, claude_confianza, cv_altura, ml_altura)
 
     # --- Layer 2: Calculate growth from baseline ---
     crecimiento_pct = None
@@ -83,22 +86,30 @@ def _fuse(
     claude_altura: float | None,
     claude_confianza: int | None,
     cv_altura: float | None,
+    ml_altura: float | None = None,
 ) -> tuple[Optional[float], Optional[str]]:
-    """Weighted average of Claude and OpenCV positions.
+    """Weighted average of all available position sources.
 
     Returns:
         (fused_altura, source_label)
     """
-    if claude_altura is not None and cv_altura is not None:
-        c_weight = float(claude_confianza) if claude_confianza else 2.0
-        total = c_weight + CV_WEIGHT
-        fused = (c_weight * claude_altura + CV_WEIGHT * cv_altura) / total
-        return round(fused, 1), "fusionado"
+    sources: list[tuple[float, float, str]] = []  # (value, weight, name)
 
     if claude_altura is not None:
-        return round(claude_altura, 1), "claude"
-
+        c_weight = float(claude_confianza) if claude_confianza else 2.0
+        sources.append((claude_altura, c_weight, "claude"))
     if cv_altura is not None:
-        return round(cv_altura, 1), "opencv"
+        sources.append((cv_altura, CV_WEIGHT, "opencv"))
+    if ml_altura is not None:
+        sources.append((ml_altura, ML_WEIGHT, "ml"))
 
-    return None, None
+    if not sources:
+        return None, None
+
+    if len(sources) == 1:
+        return round(sources[0][0], 1), sources[0][2]
+
+    total_weight = sum(w for _, w, _ in sources)
+    fused = sum(v * w for v, w, _ in sources) / total_weight
+    names = "+".join(n for _, _, n in sources)
+    return round(fused, 1), f"fusionado({names})"

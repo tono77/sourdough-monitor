@@ -31,7 +31,7 @@ class TestFusion:
         )
         # Weight: claude=3, opencv=3 → average = (3*50 + 3*40) / 6 = 45.0
         assert result["altura_pct"] == 45.0
-        assert result["fuente"] == "fusionado"
+        assert "fusionado" in result["fuente"]
 
     def test_high_confidence_favors_claude(self):
         result = compute_measurement(

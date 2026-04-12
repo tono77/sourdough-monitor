@@ -37,6 +37,7 @@ class Monitor:
         self._db = DatabaseManager(config.db_path)
         self._firebase = None
         self._gdrive = None
+        self._ml_predictor = None
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -168,9 +169,19 @@ class Monitor:
                 except Exception as e:
                     log.warning("OpenCV error: %s", e)
 
-            # Fuse measurements and calculate growth
+            # ML model prediction (independent)
+            ml_altura = None
+            if self._ml_predictor and self._ml_predictor.is_ready:
+                try:
+                    ml_altura = self._ml_predictor.predict(photo_path, calibration)
+                    if ml_altura is not None:
+                        log.info("ML: altura=%.1f%%", ml_altura)
+                except Exception as e:
+                    log.warning("ML prediction error: %s", e)
+
+            # Fuse all measurements and calculate growth
             baseline_altura = measurements.get_baseline_altura(session.id)
-            merged = compute_measurement(claude_result, cv_altura, baseline_altura)
+            merged = compute_measurement(claude_result, cv_altura, baseline_altura, ml_altura)
 
             # Save to DB
             measurement = measurements.save(session.id, photo_path, merged)
@@ -315,6 +326,15 @@ class Monitor:
             log.warning("Google Drive SDK not available")
         except Exception as e:
             log.warning("Google Drive init failed: %s", e)
+
+        # ML model (optional)
+        ml_model_path = self.config.ml_model_path
+        if ml_model_path and ml_model_path.exists():
+            try:
+                from sourdough.services.ml_predictor import MLPredictor
+                self._ml_predictor = MLPredictor(ml_model_path)
+            except Exception as e:
+                log.warning("ML predictor init failed: %s", e)
 
     def _sleep(self, seconds: float) -> None:
         """Sleep in small increments to allow graceful shutdown."""

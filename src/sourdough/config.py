@@ -64,6 +64,9 @@ class AppConfig:
     gdrive_credentials: Optional[Path] = None
     gdrive_token: Optional[Path] = None
 
+    # ML model
+    ml_model_path: Optional[Path] = None
+
     # Dashboard URL (Firebase Hosting)
     dashboard_url: str = "https://sourdough-monitor-app.web.app"
 
@@ -143,6 +146,9 @@ def load_config(base_dir: Optional[Path] = None) -> AppConfig:
     gdrive_creds = data_dir / "gdrive_credentials.json"
     gdrive_token = data_dir / "gdrive_token.json"
 
+    # ML model
+    ml_model = data_dir / "ml_model.pth"
+
     return AppConfig(
         base_dir=base_dir,
         data_dir=data_dir,
@@ -160,5 +166,6 @@ def load_config(base_dir: Optional[Path] = None) -> AppConfig:
         firebase_service_account=sa_path if sa_path.exists() else None,
         gdrive_credentials=gdrive_creds if gdrive_creds.exists() else None,
         gdrive_token=gdrive_token,
+        ml_model_path=ml_model if ml_model.exists() else None,
         dashboard_url="https://sourdough-monitor-app.web.app",
     )
