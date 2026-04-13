@@ -211,6 +211,41 @@
         </div>
     </div>
 
+    <!-- Measurement Detail Modal -->
+    <div id="measurementDetail" class="md-modal">
+        <div class="md-backdrop" onclick="closeMeasurementDetail()"></div>
+        <div class="md-content">
+            <button class="md-close" onclick="closeMeasurementDetail()">✕</button>
+            <img id="mdPhoto" class="md-photo" src="" alt="Foto de medicion">
+            <div class="md-info">
+                <div id="mdTimestamp" class="md-timestamp"></div>
+                <div class="md-fields">
+                    <label>
+                        <span>Crecimiento (%)</span>
+                        <input id="mdCrecimiento" type="number" step="0.1">
+                    </label>
+                    <label>
+                        <span>Burbujas</span>
+                        <select id="mdBurbujas">
+                            <option value="ninguna">Ninguna</option>
+                            <option value="pocas">Pocas</option>
+                            <option value="muchas">Muchas</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>Textura</span>
+                        <select id="mdTextura">
+                            <option value="lisa">Lisa</option>
+                            <option value="rugosa">Rugosa</option>
+                            <option value="muy_activa">Muy activa</option>
+                        </select>
+                    </label>
+                </div>
+                <button id="mdSaveBtn" class="md-save" onclick="saveMeasurementDetail()">Guardar correccion</button>
+            </div>
+        </div>
+    </div>
+
     <!-- App Module -->
     <script type="module" src="js/app.js"></script>
     <!-- Service Worker -->

@@ -24,7 +24,8 @@ import {
     setDoc
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 
-import { initCharts, updateCharts } from './charts.js';
+import { initCharts, updateCharts, setOnPointClick } from './charts.js';
+import { initMeasurementDetail, openMeasurementDetail, closeMeasurementDetail, saveMeasurementDetail } from './measurement-detail.js';
 import { openLightbox, openLightboxAt, openLightboxSrc, lightboxNav, closeLightbox, updateLatestPhoto, updateGallery, setupLightboxKeyboard } from './gallery.js';
 import { initCalibration, startCalibration, handleLightboxClick, getIsCalibrating } from './calibration.js';
 import { buildGrowthData, startTimer, clearTimer, promptEditCrecimiento, promptNewCycle } from './utils.js';
@@ -80,6 +81,8 @@ window.lightboxNav = lightboxNav;
 window.closeLightbox = closeLightbox;
 window.startCalibration = startCalibration;
 window.handleLightboxClick = handleLightboxClick;
+window.closeMeasurementDetail = closeMeasurementDetail;
+window.saveMeasurementDetail = saveMeasurementDetail;
 
 // ─── Expose utility functions to window ───
 window.promptEditCrecimiento = () => promptEditCrecimiento(db, doc, updateDoc, currentSessionId, allMeasurements);
@@ -87,6 +90,10 @@ window.promptNewCycle = () => promptNewCycle(db, collection, addDoc, currentSess
 
 // ─── Setup keyboard navigation (pass calibrating state getter) ───
 setupLightboxKeyboard(getIsCalibrating);
+
+// ─── Initialize measurement detail modal ───
+initMeasurementDetail(db, doc, updateDoc, () => currentSessionId);
+setOnPointClick(openMeasurementDetail);
 
 // ─── Auth state ───
 onAuthStateChanged(auth, user => {

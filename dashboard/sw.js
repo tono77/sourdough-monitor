@@ -1,5 +1,5 @@
 // Service Worker — enables PWA install + offline shell caching
-const CACHE_NAME = 'sourdough-v3';
+const CACHE_NAME = 'sourdough-v4';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
@@ -11,6 +11,7 @@ const SHELL_ASSETS = [
   '/js/gallery.js',
   '/js/calibration.js',
   '/js/utils.js',
+  '/js/measurement-detail.js',
   '/manifest.json',
 ];
 

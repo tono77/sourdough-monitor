@@ -157,6 +157,122 @@
     pointer-events: none;
 }
 
+/* ─── Measurement Detail Modal ─── */
+.md-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 1100;
+    align-items: center;
+    justify-content: center;
+}
+.md-modal.open { display: flex; }
+
+.md-backdrop {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+}
+
+.md-content {
+    position: relative;
+    background: #1a1a3e;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    max-width: 420px;
+    width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.md-close {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 1;
+    display: flex; align-items: center; justify-content: center;
+}
+.md-close:hover { background: rgba(255,255,255,0.2); }
+
+.md-photo {
+    width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+    border-radius: 12px 12px 0 0;
+    background: #000;
+}
+
+.md-info {
+    padding: 16px;
+}
+
+.md-timestamp {
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+    margin-bottom: 14px;
+    text-align: center;
+}
+
+.md-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.md-fields label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.md-fields label span {
+    color: rgba(255,255,255,0.7);
+    font-size: 13px;
+    min-width: 110px;
+    flex-shrink: 0;
+}
+
+.md-fields input,
+.md-fields select {
+    flex: 1;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #fff;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+}
+.md-fields input:focus,
+.md-fields select:focus {
+    outline: none;
+    border-color: #e94560;
+}
+
+.md-save {
+    width: 100%;
+    padding: 10px;
+    background: #e94560;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.md-save:hover { opacity: 0.9; }
+.md-save:disabled { opacity: 0.5; cursor: default; }
+
 /* ─── Responsive: Mobile ─── */
 @media (max-width: 480px) {
     .lightbox img {
@@ -188,4 +304,9 @@
     }
 
     .gallery-grid { padding: 2px 0 10px; }
+
+    .md-content { max-width: 95vw; }
+    .md-photo { max-height: 220px; }
+    .md-fields label { flex-direction: column; gap: 4px; }
+    .md-fields label span { min-width: unset; }
 }

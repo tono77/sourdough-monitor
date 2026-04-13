@@ -32,6 +32,12 @@ const verticalLinePlugin = {
     }
 };
 
+let onPointClick = null;
+
+export function setOnPointClick(callback) {
+    onPointClick = callback;
+}
+
 export function initCharts() {
     if (levelChart) return; // already initialized
 
@@ -78,6 +84,13 @@ export function initCharts() {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
+            onClick: (event, elements) => {
+                if (!elements.length || !onPointClick) return;
+                const el = elements[0];
+                if (el.datasetIndex !== 0) return; // only main level dataset
+                const point = levelChart.data.datasets[0].data[el.index];
+                if (point) onPointClick(point);
+            },
             plugins: {
                 legend: { display: false },
                 tooltip: {
@@ -262,7 +275,10 @@ export function updateCharts(measurements, gd, session) {
     }
 
     levelChart.data.datasets[0].data = validMeds.map((m, i) => ({
-        x: new Date(m.timestamp), y: growthArr[i]
+        x: new Date(m.timestamp), y: growthArr[i],
+        _id: m._id, foto_url: m.foto_url, foto_drive_id: m.foto_drive_id,
+        timestamp: m.timestamp, burbujas: m.burbujas, textura: m.textura,
+        notas: m.notas, nivel_pct: m.nivel_pct, crecimiento_pct: m.crecimiento_pct
     }));
 
     // Pass cycle event timestamps back to plugin
