@@ -6,6 +6,7 @@
   "display": "standalone",
   "background_color": "#060614",
   "theme_color": "#e94560",
+  "gcm_sender_id": "103953800507",
   "orientation": "portrait",
   "icons": [
     {

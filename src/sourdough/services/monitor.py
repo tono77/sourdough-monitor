@@ -236,6 +236,11 @@ class Monitor:
                 measurements.mark_peak(session.id, candidate["id"],
                                        candidate["nivel"], candidate["timestamp"])
                 log.info("PEAK DETECTADO: %s%%", candidate["nivel"])
+                if self._firebase:
+                    self._firebase.send_push_notification(
+                        "📈 Peak Detectado",
+                        f"Tu masa madre alcanzó su punto máximo: +{candidate['nivel']}%",
+                    )
 
     def _check_bread_window(self, session, measurement):
         """Check if bread window state changed and sync to Firestore."""
@@ -252,6 +257,16 @@ class Monitor:
             self._firebase.sync_bread_window(
                 session.id, state, measurement.timestamp
             )
+            if state == "opened":
+                self._firebase.send_push_notification(
+                    "🍞 ¡Ventana para Pan!",
+                    "Tu masa madre superó el 100% de crecimiento. Es momento de hornear.",
+                )
+            elif state == "closed":
+                self._firebase.send_push_notification(
+                    "⏰ Ventana Cerrada",
+                    "Tu masa madre bajó del 100%. La ventana para hornear se cerró.",
+                )
 
     def _check_hibernation(self) -> bool:
         if self._firebase:

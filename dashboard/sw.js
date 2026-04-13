@@ -1,5 +1,34 @@
-// Service Worker — enables PWA install + offline shell caching
-const CACHE_NAME = 'sourdough-v5';
+// Service Worker — PWA install + offline shell caching + FCM push notifications
+
+// ─── Firebase Messaging (compat SDK for SW context) ───
+importScripts('https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/11.6.0/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+    apiKey: "AIzaSyCvH1nqbrIeakI5P5AuGTuEgDtL3SV_kNo",
+    authDomain: "sourdough-monitor-app.firebaseapp.com",
+    projectId: "sourdough-monitor-app",
+    storageBucket: "sourdough-monitor-app.firebasestorage.app",
+    messagingSenderId: "231699057388",
+    appId: "1:231699057388:web:7685b1795464dc4cc173c9"
+});
+
+const messaging = firebase.messaging();
+
+// Handle background push (app closed or in background)
+messaging.onBackgroundMessage((payload) => {
+    const { title, body } = payload.notification || {};
+    if (title) {
+        self.registration.showNotification(title, {
+            body: body || '',
+            icon: '/icons/icon-192.png',
+            badge: '/icons/icon-192.png',
+        });
+    }
+});
+
+// ─── Cache config ───
+const CACHE_NAME = 'sourdough-v6';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
@@ -54,6 +83,21 @@ self.addEventListener('fetch', event => {
       }).catch(() => cached); // Offline fallback to cache
 
       return cached || fetching;
+    })
+  );
+});
+
+// Notification click: open/focus the app
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+      for (const client of windowClients) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      return clients.openWindow('/');
     })
   );
 });

@@ -188,6 +188,43 @@ class FirebaseClient:
             log.warning("Firestore bread window sync error: %s", e)
             return False
 
+    # -- Push notifications --------------------------------------------------
+
+    def send_push_notification(self, title: str, body: str) -> bool:
+        """Send a push notification via FCM to the registered web client."""
+        if self._db is None:
+            return False
+        try:
+            from firebase_admin import messaging
+
+            # Read FCM token from Firestore
+            token_doc = self._db.collection("app_config").document("fcm_token").get()
+            if not token_doc.exists:
+                log.warning("No FCM token registered — skipping push")
+                return False
+
+            fcm_token = token_doc.to_dict().get("token")
+            if not fcm_token:
+                log.warning("FCM token document is empty — skipping push")
+                return False
+
+            message = messaging.Message(
+                notification=messaging.Notification(title=title, body=body),
+                webpush=messaging.WebpushConfig(
+                    notification=messaging.WebpushNotification(
+                        icon="/icons/icon-192.png",
+                        badge="/icons/icon-192.png",
+                    ),
+                ),
+                token=fcm_token,
+            )
+            messaging.send(message)
+            log.info("Push notification sent: %s", title)
+            return True
+        except Exception as e:
+            log.warning("FCM push error: %s", e)
+            return False
+
     def get_hibernate_state(self) -> bool:
         if self._db is None:
             return False

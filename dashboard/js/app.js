@@ -23,6 +23,7 @@ import {
     addDoc,
     setDoc
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
+import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-messaging.js';
 
 import { initCharts, updateCharts, setOnPointClick } from './charts.js';
 import { initMeasurementDetail, openMeasurementDetail, closeMeasurementDetail, saveMeasurementDetail } from './measurement-detail.js';
@@ -65,7 +66,7 @@ let sessionsUnsubscribe = null;
 let allMeasurements = [];
 let appConfigUnsubscribe = null;
 let isHibernating = false;
-let lastBreadWindowState = null; // tracks ventana_pan_activa to detect changes
+let messaging = null;
 
 // ─── Initialize calibration module with Firebase refs ───
 initCalibration(
@@ -96,17 +97,57 @@ setupLightboxKeyboard(getIsCalibrating);
 initMeasurementDetail(db, doc, updateDoc, () => currentSessionId);
 setOnPointClick(openMeasurementDetail);
 
-// ─── Web Notifications ───
-function requestNotificationPermission() {
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
+// ─── FCM Push Notifications ───
+// VAPID key must be generated in Firebase Console > Project Settings > Cloud Messaging > Web Push certificates
+const VAPID_KEY = 'BGTdEwlwka5fwP6OqimZYEGGfUJaQuMRgSMmut2e7ks6iSZ7zniNxJ_gTaGSPQhcQ8s4ZWRLnnk7G-qYpy1NGBM';
+
+async function initPushNotifications() {
+    try {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') return;
+
+        const swReg = await navigator.serviceWorker.ready;
+        messaging = getMessaging(app);
+
+        const fcmToken = await getToken(messaging, {
+            vapidKey: VAPID_KEY,
+            serviceWorkerRegistration: swReg,
+        });
+
+        if (fcmToken) {
+            // Save token to Firestore so the Python backend can send pushes
+            await setDoc(doc(db, 'app_config', 'fcm_token'), {
+                token: fcmToken,
+                updated: new Date().toISOString(),
+            });
+            console.log('FCM token registered');
+        }
+
+        // Foreground messages: show in-app toast
+        onMessage(messaging, (payload) => {
+            const { title, body } = payload.notification || {};
+            if (title) showToast(title, body);
+        });
+    } catch (err) {
+        console.warn('Push notification init failed:', err);
     }
 }
 
-function sendNotification(title, body, icon = '🍞') {
-    if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(title, { body, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png' });
+function showToast(title, body) {
+    let toast = document.getElementById('pushToast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'pushToast';
+        toast.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);' +
+            'background:var(--card-bg,#1a1a2e);color:#fff;padding:12px 20px;border-radius:12px;' +
+            'box-shadow:0 4px 20px rgba(0,0,0,.5);z-index:9999;max-width:90vw;' +
+            'border:1px solid var(--accent,#e94560);transition:opacity .3s;font-size:14px;';
+        document.body.appendChild(toast);
     }
+    toast.innerHTML = `<strong>${title}</strong><br><span style="opacity:.8">${body || ''}</span>`;
+    toast.style.opacity = '1';
+    clearTimeout(toast._hideTimer);
+    toast._hideTimer = setTimeout(() => { toast.style.opacity = '0'; }, 5000);
 }
 
 // ─── Auth state ───
@@ -126,7 +167,7 @@ onAuthStateChanged(auth, user => {
         }
         document.getElementById('userName').textContent = user.displayName || user.email;
 
-        requestNotificationPermission();
+        initPushNotifications();
         initCharts();
         loadSessions();
         loadAppConfig();
@@ -278,22 +319,6 @@ function selectSession(sessionId) {
             } else {
                 breadBanner.classList.remove('visible');
             }
-
-            // Send browser notification on state change
-            if (lastBreadWindowState !== null && windowActive !== lastBreadWindowState) {
-                if (windowActive) {
-                    sendNotification(
-                        '🍞 ¡Ventana para Pan!',
-                        'Tu masa madre superó el 100% de crecimiento. Es momento de hornear.'
-                    );
-                } else {
-                    sendNotification(
-                        '⏰ Ventana Cerrada',
-                        'Tu masa madre bajó del 100%. La ventana para hornear se cerró.'
-                    );
-                }
-            }
-            lastBreadWindowState = windowActive;
 
             render();
         }
