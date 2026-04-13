@@ -79,3 +79,23 @@
 .activity-section { margin-bottom: 20px; }
 
 .activity-chart-container { height: 140px; }
+
+/* ─── Responsive: Mobile ─── */
+@media (max-width: 480px) {
+    .top-dash-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px;
+    }
+
+    .metric-card { padding: 12px 8px; }
+    .metric-value { font-size: 28px !important; }
+    .metric-card.bubbles .metric-value,
+    .metric-card.texture .metric-value { font-size: 24px !important; }
+    .metric-label { font-size: 10px; }
+    .metric-sub { font-size: 9px; }
+
+    .photo-card { grid-column: 1 / -1; }
+
+    .chart-container { height: 220px; }
+    .activity-chart-container { height: 100px; }
+}
