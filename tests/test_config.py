@@ -15,7 +15,6 @@ class TestConfig:
             assert config.capture.interval_seconds == 300
             assert config.schedule.start_hour == 7
             assert config.claude_model == "claude-3-haiku-20240307"
-            assert config.email.enabled is False
 
     def test_loads_from_config_json(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -40,23 +39,6 @@ class TestConfig:
 
             config = load_config(base)
             assert config.anthropic_api_key == "sk-test-123"
-
-    def test_env_overrides_json_email_password(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            base = Path(tmpdir)
-            cfg = {
-                "email": {
-                    "enabled": True,
-                    "sender": "test@test.com",
-                    "password": "json-password",
-                    "recipient": "dest@test.com",
-                },
-            }
-            (base / "config.json").write_text(json.dumps(cfg))
-            (base / ".env").write_text("SMTP_PASSWORD=env-password\n")
-
-            config = load_config(base)
-            assert config.email.password == "env-password"
 
     def test_paths_relative_to_base_dir(self):
         with tempfile.TemporaryDirectory() as tmpdir:

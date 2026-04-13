@@ -432,6 +432,29 @@ body::before {
 .chip-status.live { background: #4caf50; }
 .chip-status.done { background: #555; }
 
+/* Bread Window Banner */
+.bread-window-banner {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, rgba(76,175,80,0.1), rgba(139,195,74,0.08));
+    border: 1px solid rgba(76,175,80,0.3);
+    border-radius: var(--radius-md);
+    margin-bottom: 20px;
+    animation: glow-green 2s ease-in-out infinite alternate;
+}
+
+.bread-window-banner.visible { display: flex; }
+
+.bread-window-banner h3 { color: #4caf50; font-size: 14px; font-weight: 700; }
+.bread-window-banner p { color: var(--text-secondary); font-size: 12px; margin-top: 2px; }
+
+@keyframes glow-green {
+    from { box-shadow: 0 0 10px rgba(76,175,80,0.05); }
+    to { box-shadow: 0 0 30px rgba(76,175,80,0.15); }
+}
+
 /* Peak Banner */
 .peak-banner {
     display: none;
@@ -615,11 +638,14 @@ body::before {
     .notes-text { font-size: 12px; line-height: 1.4; }
 
     /* Banners */
+    .bread-window-banner,
     .peak-banner, .calib-banner {
         flex-direction: column;
         gap: 8px;
         padding: 10px 12px;
     }
+    .bread-window-banner h3 { font-size: 12px; }
+    .bread-window-banner p { font-size: 10px; }
     .peak-icon { font-size: 20px; }
     .peak-text h3 { font-size: 12px; }
     .peak-text p { font-size: 10px; }

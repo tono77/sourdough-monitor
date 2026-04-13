@@ -159,6 +159,35 @@ class FirebaseClient:
             log.warning("Firestore pull corrections error: %s", e)
             return []
 
+    def sync_bread_window(self, session_id: int, state: str, timestamp: str) -> bool:
+        """Update bread window state on the session document.
+
+        Args:
+            session_id: The session ID.
+            state: "opened" or "closed".
+            timestamp: ISO timestamp of the state change.
+        """
+        if self._db is None:
+            return False
+        try:
+            doc_ref = self._db.collection("sesiones").document(str(session_id))
+            if state == "opened":
+                doc_ref.update({
+                    "ventana_pan_activa": True,
+                    "ventana_pan_inicio": timestamp,
+                    "ventana_pan_fin": None,
+                })
+            elif state == "closed":
+                doc_ref.update({
+                    "ventana_pan_activa": False,
+                    "ventana_pan_fin": timestamp,
+                })
+            log.info("Bread window state synced: %s", state)
+            return True
+        except Exception as e:
+            log.warning("Firestore bread window sync error: %s", e)
+            return False
+
     def get_hibernate_state(self) -> bool:
         if self._db is None:
             return False

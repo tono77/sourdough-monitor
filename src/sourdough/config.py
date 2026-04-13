@@ -12,22 +12,11 @@ from typing import Optional
 
 
 @dataclass(frozen=True)
-class EmailConfig:
-    enabled: bool = False
-    smtp_host: str = "smtp.gmail.com"
-    smtp_port: int = 587
-    sender: str = ""
-    password: str = ""
-    recipient: str = ""
-
-
-@dataclass(frozen=True)
 class ScheduleConfig:
     start_hour: int = 7
     start_minute: int = 0
     end_hour: int = 23
     end_minute: int = 0
-    email_interval_seconds: int = 3600
 
 
 @dataclass(frozen=True)
@@ -48,10 +37,8 @@ class AppConfig:
 
     # Secrets (from .env)
     anthropic_api_key: str = ""
-    email_password: str = ""
 
     # Sub-configs
-    email: EmailConfig = field(default_factory=EmailConfig)
     schedule: ScheduleConfig = field(default_factory=ScheduleConfig)
     capture: CaptureConfig = field(default_factory=CaptureConfig)
 
@@ -109,18 +96,6 @@ def load_config(base_dir: Optional[Path] = None) -> AppConfig:
     env = _load_dotenv(env_path)
     api_key = os.environ.get("ANTHROPIC_API_KEY") or env.get("ANTHROPIC_API_KEY", "")
 
-    # Build email config — password from .env takes precedence
-    email_raw = cfg.get("email", {})
-    email_password = env.get("SMTP_PASSWORD") or email_raw.get("password", "")
-    email_config = EmailConfig(
-        enabled=email_raw.get("enabled", False),
-        smtp_host=email_raw.get("smtp_host", "smtp.gmail.com"),
-        smtp_port=email_raw.get("smtp_port", 587),
-        sender=email_raw.get("sender", ""),
-        password=email_password,
-        recipient=email_raw.get("recipient", ""),
-    )
-
     # Schedule
     sched_raw = cfg.get("schedule", {})
     schedule_config = ScheduleConfig(
@@ -128,7 +103,6 @@ def load_config(base_dir: Optional[Path] = None) -> AppConfig:
         start_minute=sched_raw.get("start_minute", 0),
         end_hour=sched_raw.get("end_hour", 23),
         end_minute=sched_raw.get("end_minute", 0),
-        email_interval_seconds=sched_raw.get("email_interval_seconds", 3600),
     )
 
     # Capture
@@ -157,8 +131,6 @@ def load_config(base_dir: Optional[Path] = None) -> AppConfig:
         log_path=data_dir / "sourdough.log",
         db_path=data_dir / "fermento.db",
         anthropic_api_key=api_key,
-        email_password=email_password,
-        email=email_config,
         schedule=schedule_config,
         capture=capture_config,
         claude_model=claude_model,

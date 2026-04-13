@@ -65,6 +65,7 @@ let sessionsUnsubscribe = null;
 let allMeasurements = [];
 let appConfigUnsubscribe = null;
 let isHibernating = false;
+let lastBreadWindowState = null; // tracks ventana_pan_activa to detect changes
 
 // ─── Initialize calibration module with Firebase refs ───
 initCalibration(
@@ -95,6 +96,19 @@ setupLightboxKeyboard(getIsCalibrating);
 initMeasurementDetail(db, doc, updateDoc, () => currentSessionId);
 setOnPointClick(openMeasurementDetail);
 
+// ─── Web Notifications ───
+function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+
+function sendNotification(title, body, icon = '🍞') {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png' });
+    }
+}
+
 // ─── Auth state ───
 onAuthStateChanged(auth, user => {
     const loginScreen = document.getElementById('loginScreen');
@@ -112,6 +126,7 @@ onAuthStateChanged(auth, user => {
         }
         document.getElementById('userName').textContent = user.displayName || user.email;
 
+        requestNotificationPermission();
         initCharts();
         loadSessions();
         loadAppConfig();
@@ -247,6 +262,38 @@ function selectSession(sessionId) {
             } else if (localSession.estado === 'activa') {
                 document.getElementById('calibBanner').classList.add('visible');
             }
+
+            // Bread window state
+            const breadBanner = document.getElementById('breadWindowBanner');
+            const windowActive = localSession.ventana_pan_activa === true;
+
+            if (windowActive) {
+                breadBanner.classList.add('visible');
+                const inicio = localSession.ventana_pan_inicio;
+                if (inicio) {
+                    const t = new Date(inicio);
+                    document.getElementById('breadWindowInfo').textContent =
+                        `Desde las ${t.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })} — tu masa madre superó el 100%`;
+                }
+            } else {
+                breadBanner.classList.remove('visible');
+            }
+
+            // Send browser notification on state change
+            if (lastBreadWindowState !== null && windowActive !== lastBreadWindowState) {
+                if (windowActive) {
+                    sendNotification(
+                        '🍞 ¡Ventana para Pan!',
+                        'Tu masa madre superó el 100% de crecimiento. Es momento de hornear.'
+                    );
+                } else {
+                    sendNotification(
+                        '⏰ Ventana Cerrada',
+                        'Tu masa madre bajó del 100%. La ventana para hornear se cerró.'
+                    );
+                }
+            }
+            lastBreadWindowState = windowActive;
 
             render();
         }

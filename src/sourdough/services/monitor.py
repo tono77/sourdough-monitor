@@ -9,7 +9,6 @@ import signal
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from sourdough.config import AppConfig
 from sourdough.db.connection import DatabaseManager
@@ -23,7 +22,7 @@ from sourdough.services import capture as capture_svc
 from sourdough.services import charting, peak_detector, timelapse
 from sourdough.services.analyzer import analyze_photo, run_opencv
 from sourdough.services.measurement import compute_measurement
-from sourdough.services.notifier import send_peak_alert, send_update_email
+from sourdough.services.bread_window import check_bread_window
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +37,7 @@ class Monitor:
         self._firebase = None
         self._gdrive = None
         self._ml_predictor = None
+        self._bread_window_open = False
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -62,13 +62,10 @@ class Monitor:
 
         # Monitoring mode
         interval = self.config.capture.interval_seconds
-        email_interval = self.config.schedule.email_interval_seconds
-        last_email_time: Optional[float] = None
 
         sched = self.config.schedule
         log.info("Sourdough Monitor started")
         log.info("  Capture interval: %ds (%d min)", interval, interval // 60)
-        log.info("  Email interval: %ds (%d min)", email_interval, email_interval // 60)
         log.info("  Active hours: %02d:%02d - %02d:%02d",
                  sched.start_hour, sched.start_minute, sched.end_hour, sched.end_minute)
 
@@ -85,13 +82,7 @@ class Monitor:
             log.info("Session #%d (%s)", session.id, session.fecha)
 
             # Run cycle
-            drive_url = self._run_cycle(conn, session, sessions, measurements)
-
-            # Email notification
-            now = time.time()
-            if last_email_time is None or (now - last_email_time) >= email_interval:
-                self._send_email(session, measurements, drive_url)
-                last_email_time = now
+            self._run_cycle(conn, session, sessions, measurements)
 
             # Wait for next cycle
             log.info("Next capture in %ds (%d min)", interval, interval // 60)
@@ -110,9 +101,8 @@ class Monitor:
         session: Session,
         sessions: SessionRepository,
         measurements: MeasurementRepository,
-    ) -> Optional[str]:
+    ) -> None:
         """Run a single capture → analyze → save → sync cycle."""
-        drive_url = None
 
         # Flash screen for night captures
         capture_svc.flash_screen()
@@ -121,7 +111,7 @@ class Monitor:
 
         if not photo_path:
             log.warning("Capture failed, skipping cycle")
-            return None
+            return
 
         log.info("Foto: %s", Path(photo_path).name)
 
@@ -131,7 +121,6 @@ class Monitor:
             uploaded_photo = self._gdrive.upload_photo(photo_path)
             if uploaded_photo:
                 log.info("Photo uploaded to Drive: %s", Path(photo_path).name)
-                drive_url = uploaded_photo.get("url")
 
         # Pull calibration from Firebase
         if self._firebase:
@@ -218,10 +207,11 @@ class Monitor:
             else:
                 self._check_peak(session, measurements, sessions)
 
+            # Bread window detection
+            self._check_bread_window(session, measurement)
+
         except Exception as e:
             log.error("Error análisis: %s", e)
-
-        return drive_url
 
     # ------------------------------------------------------------------
     # Helpers
@@ -246,26 +236,22 @@ class Monitor:
                 measurements.mark_peak(session.id, candidate["id"],
                                        candidate["nivel"], candidate["timestamp"])
                 log.info("PEAK DETECTADO: %s%%", candidate["nivel"])
-                send_peak_alert(self.config, session, candidate)
 
-    def _send_email(self, session, measurements, drive_url):
-        """Send periodic update email."""
-        try:
-            latest = measurements.get_latest(session.id)
-            all_m = measurements.get_by_session(session.id)
-            elapsed = 0.0
-            if session.hora_inicio:
-                start = datetime.fromisoformat(session.hora_inicio)
-                elapsed = (datetime.now() - start).total_seconds() / 3600
+    def _check_bread_window(self, session, measurement):
+        """Check if bread window state changed and sync to Firestore."""
+        state = check_bread_window(measurement, self._bread_window_open)
+        if state is None:
+            return
 
-            send_update_email(
-                self.config, session, latest,
-                measurement_count=len(all_m),
-                elapsed_hours=elapsed,
-                photo_url=drive_url,
+        if state == "opened":
+            self._bread_window_open = True
+        elif state == "closed":
+            self._bread_window_open = False
+
+        if self._firebase:
+            self._firebase.sync_bread_window(
+                session.id, state, measurement.timestamp
             )
-        except Exception as e:
-            log.warning("Email error: %s", e)
 
     def _check_hibernation(self) -> bool:
         if self._firebase:
