@@ -138,6 +138,54 @@ body::before {
     flex-shrink: 0;
 }
 
+#githubSignInBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 24px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.07);
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+#githubSignInBtn:hover {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+#githubSignInBtn svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.login-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.login-divider::before,
+.login-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+}
+
 .login-footer {
     margin-top: 28px;
     font-size: 11px;
@@ -216,6 +264,43 @@ body::before {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.btn-github-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--text-secondary);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.btn-github-link:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.25);
+    color: var(--text-primary);
+}
+
+.github-link-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent-green);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.github-link-status .github-username {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 #signOutBtn {
@@ -592,6 +677,10 @@ body::before {
     .realtime-badge { display: none; }
     .user-name { display: none; }
     .user-avatar { width: 26px; height: 26px; }
+    .btn-github-link span { display: none; }
+    .btn-github-link { padding: 4px 6px; font-size: 0; }
+    .btn-github-link svg { width: 16px; height: 16px; }
+    .github-link-status .github-username { display: none; }
     #signOutBtn { font-size: 10px; padding: 3px 8px; }
     .status-badge { font-size: 9px; padding: 3px 8px; border-radius: 12px; }
     .timer { font-size: 12px; }

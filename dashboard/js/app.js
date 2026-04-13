@@ -5,7 +5,9 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.0/firebas
 import {
     getAuth,
     GoogleAuthProvider,
+    GithubAuthProvider,
     signInWithPopup,
+    linkWithPopup,
     signOut as fbSignOut,
     onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
@@ -55,7 +57,54 @@ window.signInWithGoogle = async () => {
     }
 };
 
+window.signInWithGithub = async () => {
+    const provider = new GithubAuthProvider();
+    try {
+        await signInWithPopup(auth, provider);
+    } catch (e) {
+        console.error('GitHub login error:', e);
+        alert('Error al iniciar sesion con GitHub: ' + e.message);
+    }
+};
+
+window.linkGithubAccount = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    const provider = new GithubAuthProvider();
+    try {
+        await linkWithPopup(user, provider);
+        updateGithubLinkUI(user);
+    } catch (e) {
+        if (e.code === 'auth/credential-already-in-use') {
+            alert('Esta cuenta de GitHub ya esta vinculada a otro usuario.');
+        } else if (e.code === 'auth/provider-already-linked') {
+            alert('Ya tienes una cuenta de GitHub vinculada.');
+        } else {
+            console.error('GitHub link error:', e);
+            alert('Error al vincular GitHub: ' + e.message);
+        }
+    }
+};
+
 window.signOut = () => fbSignOut(auth);
+
+// ─── GitHub link UI helper ───
+function updateGithubLinkUI(user) {
+    const linkBtn = document.getElementById('githubLinkBtn');
+    const linkStatus = document.getElementById('githubLinkStatus');
+    if (!linkBtn || !linkStatus) return;
+
+    const githubProvider = user.providerData.find(p => p.providerId === 'github.com');
+    if (githubProvider) {
+        linkBtn.style.display = 'none';
+        linkStatus.style.display = 'flex';
+        const username = githubProvider.displayName || githubProvider.email || 'Conectado';
+        linkStatus.querySelector('.github-username').textContent = username;
+    } else {
+        linkBtn.style.display = 'flex';
+        linkStatus.style.display = 'none';
+    }
+}
 
 // ─── State ───
 let currentSessionId = null;
@@ -126,6 +175,7 @@ onAuthStateChanged(auth, user => {
         }
         document.getElementById('userName').textContent = user.displayName || user.email;
 
+        updateGithubLinkUI(user);
         requestNotificationPermission();
         initCharts();
         loadSessions();
