@@ -4,12 +4,14 @@
 let _db = null;
 let _doc = null;
 let _updateDoc = null;
+let _deleteDoc = null;
 let _getSessionId = null;
 
-export function initMeasurementDetail(db, doc, updateDoc, getSessionId) {
+export function initMeasurementDetail(db, doc, updateDoc, deleteDoc, getSessionId) {
     _db = db;
     _doc = doc;
     _updateDoc = updateDoc;
+    _deleteDoc = deleteDoc;
     _getSessionId = getSessionId;
 
     document.addEventListener('keydown', e => {
@@ -107,5 +109,35 @@ export async function saveMeasurementDetail() {
         alert('Error al guardar: ' + e.message);
         saveBtn.disabled = false;
         saveBtn.textContent = 'Guardar correccion';
+    }
+}
+
+export async function deleteMeasurement() {
+    const modal = document.getElementById('measurementDetail');
+    const measurementId = modal.dataset.measurementId;
+    const sessionId = _getSessionId();
+
+    if (!measurementId || !sessionId || !_db) {
+        alert('Error: no se pudo identificar la medicion.');
+        return;
+    }
+
+    if (!confirm('¿Eliminar esta medicion? Esta accion no se puede deshacer.')) return;
+
+    const deleteBtn = document.getElementById('mdDeleteBtn');
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = 'Eliminando...';
+
+    try {
+        const mRef = _doc(_db, 'sesiones', sessionId, 'mediciones', measurementId);
+        await _deleteDoc(mRef);
+        closeMeasurementDetail();
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = 'Eliminar medicion';
+    } catch (e) {
+        console.error('Error deleting measurement:', e);
+        alert('Error al eliminar: ' + e.message);
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = 'Eliminar medicion';
     }
 }

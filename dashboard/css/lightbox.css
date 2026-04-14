@@ -258,8 +258,28 @@
     border-color: #e94560;
 }
 
+.md-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.md-delete {
+    flex: 1;
+    padding: 10px;
+    background: transparent;
+    color: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.md-delete:hover { color: #e94560; border-color: #e94560; }
+.md-delete:disabled { opacity: 0.5; cursor: default; }
+
 .md-save {
-    width: 100%;
+    flex: 2;
     padding: 10px;
     background: #e94560;
     color: #fff;
