@@ -59,15 +59,10 @@ def capture_photo(config: AppConfig) -> str | None:
 
 
 def flash_screen() -> None:
-    """Produce a soft flash by waking the display and opening a white page."""
+    """Wake display and max brightness — works on lock screen (no Safari needed)."""
     try:
         subprocess.run(["caffeinate", "-u", "-t", "2"], check=False)
-        flash_file = Path("data/flash.html").resolve()
-        flash_file.parent.mkdir(parents=True, exist_ok=True)
-        flash_file.write_text(
-            "<html><body style='background-color:white; margin:0;'></body></html>"
-        )
-        subprocess.run(["open", "-a", "Safari", str(flash_file)], check=False)
+        subprocess.run(["brightness", "1.0"], check=False)
         import time
         time.sleep(1.5)
     except Exception as e:
@@ -75,11 +70,8 @@ def flash_screen() -> None:
 
 
 def restore_screen() -> None:
-    """Close the blank white page."""
+    """Lower brightness back to a reasonable level after capture."""
     try:
-        subprocess.run(
-            ["osascript", "-e", 'tell application "Safari" to close front window'],
-            check=False,
-        )
+        subprocess.run(["brightness", "0.5"], check=False)
     except Exception:
         pass
