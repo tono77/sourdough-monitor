@@ -27,6 +27,25 @@ from sourdough.services.bread_window import check_bread_window
 log = logging.getLogger(__name__)
 
 
+def _utc_to_local_naive(ts: str) -> str:
+    """Convert a UTC ISO timestamp (with Z or +00:00) to a naive local-time string.
+
+    DB timestamps are naive local time, so cycle marker timestamps from
+    Firebase (UTC) must be converted before SQL comparison.
+    """
+    if not ts:
+        return ts
+    # Normalize "Z" suffix to "+00:00" for fromisoformat
+    normalized = ts.replace("Z", "+00:00")
+    try:
+        dt_utc = datetime.fromisoformat(normalized)
+        dt_local = dt_utc.astimezone(tz=None)  # system local timezone
+        return dt_local.replace(tzinfo=None).isoformat()
+    except (ValueError, TypeError):
+        log.warning("No se pudo convertir timestamp UTC a local: %s", ts)
+        return ts
+
+
 class Monitor:
     """Orchestrates the capture → analyze → save → sync → notify pipeline."""
 
@@ -135,6 +154,10 @@ class Monitor:
             cycle_markers = self._firebase.pull_cycle_markers(session.id)
             if cycle_markers:
                 latest_cycle_ts = cycle_markers[-1].get("timestamp")
+                # Firebase timestamps are UTC (ISO with Z suffix).
+                # DB timestamps are naive local time.  Convert to local
+                # so the SQL comparison in get_baseline_* works correctly.
+                latest_cycle_ts = _utc_to_local_naive(latest_cycle_ts)
                 log.info("Último ciclo detectado: %s", latest_cycle_ts)
 
         # Refresh session after potential calibration update

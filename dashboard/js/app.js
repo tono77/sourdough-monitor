@@ -68,6 +68,7 @@ let allMeasurements = [];
 let appConfigUnsubscribe = null;
 let isHibernating = false;
 let messaging = null;
+let rerenderDashboard = null; // set by selectSession so loadAppConfig can re-render on wake
 
 // ─── Initialize calibration module with Firebase refs ───
 initCalibration(
@@ -205,10 +206,14 @@ function loadAppConfig() {
             isHibernating = false;
             btn.innerHTML = '❄️ Refrigerar';
 
-            // Restore original class (we just assume it's loading/active to let
-            // loadSessionDetails reset it to active or inactive based on latest measurement)
-            badge.className = 'status-badge inactive';
-            badgeText.textContent = 'Cargando...';
+            // Re-render with current session data so the badge reflects the real
+            // state (Monitoreando / Completada) instead of staying as "Cargando..."
+            if (rerenderDashboard) {
+                rerenderDashboard();
+            } else {
+                badge.className = 'status-badge inactive';
+                badgeText.textContent = 'Cargando...';
+            }
         }
     });
 }
@@ -282,6 +287,7 @@ function selectSession(sessionId) {
     const render = () => {
         if (localSession) updateDashboard(localSession, localMeasurements);
     };
+    rerenderDashboard = render;
 
     // 1. Subscribe to measurements subcollection
     const medsRef = collection(db, 'sesiones', sessionId, 'mediciones');
@@ -366,17 +372,21 @@ function updateDashboard(session, measurements) {
     const currentGrowth = latestValidIdx >= 0 ? gd.growthArr[latestValidIdx] : null;
     const prevGrowth    = latestValidIdx >= 1 ? gd.growthArr[latestValidIdx - 1] : null;
 
-    // Level metric
+    // Level metric — shows absolute jar level (altura_pct)
     if (latest) {
-        document.getElementById('levelValue').textContent =
-            currentGrowth != null ? (currentGrowth >= 0 ? `+${currentGrowth.toFixed(0)}%` : `${currentGrowth.toFixed(0)}%`) : '--';
+        const currentLevel = latest.altura_pct != null ? parseFloat(latest.altura_pct) : null;
+        const prevMed = gd && latestValidIdx >= 1 ? gd.validMeds[latestValidIdx - 1] : null;
+        const prevLevel = prevMed && prevMed.altura_pct != null ? parseFloat(prevMed.altura_pct) : null;
 
-        if (prevGrowth != null && currentGrowth != null) {
-            const diff = currentGrowth - prevGrowth;
+        document.getElementById('levelValue').textContent =
+            currentLevel != null ? `${currentLevel.toFixed(0)}%` : '--';
+
+        if (prevLevel != null && currentLevel != null) {
+            const diff = currentLevel - prevLevel;
             let arrow = '→';
             let color = '#888';
-            if (diff > 0) { arrow = '↑'; color = '#4caf50'; }
-            else if (diff < 0) { arrow = '↓'; color = '#e94560'; }
+            if (diff > 0.5) { arrow = '↑'; color = '#4caf50'; }
+            else if (diff < -0.5) { arrow = '↓'; color = '#e94560'; }
 
             const sign = diff > 0 ? '+' : '';
             const sub = document.getElementById('levelSub');

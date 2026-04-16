@@ -101,7 +101,7 @@ export function initCharts() {
                     padding: 12,
                     cornerRadius: 8,
                     callbacks: {
-                        label: ctx => `Nivel: ${ctx.parsed.y?.toFixed(1) ?? '--'}%`
+                        label: ctx => `Nivel en frasco: ${ctx.parsed.y?.toFixed(1) ?? '--'}%`
                     }
                 }
             },
@@ -114,10 +114,10 @@ export function initCharts() {
                 },
                 y: {
                     grid: { color: 'rgba(255,255,255,0.03)' },
-                    title: { display: true, text: 'Crecimiento desde inicio (%)', color: '#666' },
-                    ticks: { callback: v => `${v >= 0 ? '+' : ''}${v.toFixed(0)}%` },
-                    suggestedMin: -5,
-                    suggestedMax: 10
+                    title: { display: true, text: 'Nivel en frasco (%)', color: '#666' },
+                    ticks: { callback: v => `${v.toFixed(0)}%` },
+                    suggestedMin: 0,
+                    suggestedMax: 100
                 }
             }
         },
@@ -278,7 +278,8 @@ export function updateCharts(measurements, gd, session) {
         x: new Date(m.timestamp), y: growthArr[i],
         _id: m._id, foto_url: m.foto_url, foto_drive_id: m.foto_drive_id,
         timestamp: m.timestamp, burbujas: m.burbujas, textura: m.textura,
-        notas: m.notas, nivel_pct: m.nivel_pct, crecimiento_pct: m.crecimiento_pct
+        notas: m.notas, nivel_pct: m.nivel_pct, crecimiento_pct: m.crecimiento_pct,
+        altura_pct: m.altura_pct
     }));
 
     // Pass cycle event timestamps back to plugin
