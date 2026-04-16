@@ -32,15 +32,22 @@ TAREA: Mide la posición de la SUPERFICIE de la masa en el frasco.
 - 0% = el FONDO INTERIOR del frasco (vacío total)
 - 100% = la TAPA del frasco (lleno hasta arriba)
 
-{corrections_context}
+{calibration_context}{corrections_context}
+IMPORTANTE: La masa madre es una sustancia BLANCA/CREMA que llena el frasco desde el fondo hacia arriba.
+Puede ser translúcida — se pueden ver las marcas del vidrio A TRAVÉS de ella. No confundas la masa
+con vidrio vacío. La masa termina donde se ve el vidrio claramente vacío (sin contenido detrás).
+
 MÉTODO:
-1. Busca la banda elástica roja como REFERENCIA visual.
+1. Busca la banda elástica roja como REFERENCIA visual fija.
 2. Identifica dónde está la superficie de la MASA SÓLIDA (no la espuma).
    IMPORTANTE: La masa madre suele tener burbujas grandes en la parte superior.
    NO midas el tope de las burbujas — mide el último nivel continuo de masa sólida,
    donde termina el cuerpo denso y empiezan las burbujas grandes o la espuma.
-3. Usa las marcas/rayitas impresas en el vidrio para estimar la posición.
-4. NO uses los píxeles de la imagen — la perspectiva deforma. Usa las marcas físicas del frasco.
+3. Estima la posición como porcentaje del RECORRIDO VERTICAL entre el fondo y la tapa.
+   IGNORA los números de mililitros (ml) impresos en el vidrio — NO son porcentajes.
+   Usa las rayitas como referencia de distancia relativa, NO sus valores numéricos.
+4. VERIFICACIÓN: si la masa está SOBRE la banda roja, altura_pct DEBE ser mayor que banda_pct.
+   Si la masa está BAJO la banda roja, altura_pct DEBE ser menor que banda_pct.
 
 Responde SOLO con JSON válido:
 {{
@@ -95,11 +102,19 @@ def _load_corrections(corrections_file: Path) -> str:
         if not corrections:
             return ""
         recent = corrections[-3:]
-        lines = ["HISTORIAL DE CORRECCIONES MANUALES RECIENTES DEL USUARIO:"]
+        lines = ["CORRECCIONES MANUALES RECIENTES (posición absoluta en frasco):"]
         for c in recent:
             ts = c.get("timestamp", "").split("T")[-1][:5]
-            lines.append(f"- A las {ts}, el usuario reportó que el nivel real de crecimiento era: {c.get('nivel_pct')}%.")
-        lines.append("\nUtiliza esta escala como referencia absoluta para la foto de ahora.\n")
+            # Prefer altura_pct (absolute position) over nivel_pct (growth)
+            altura = c.get("altura_pct_corrected") or c.get("altura_pct")
+            if altura is not None:
+                lines.append(f"- A las {ts}, la posición real de la masa en el frasco era: {altura}%.")
+            else:
+                # Fallback: nivel_pct is growth, not useful for absolute position
+                pass
+        if len(lines) <= 1:
+            return ""
+        lines.append("\nUsa estas referencias para calibrar tu lectura de la foto actual.\n")
         return "\n".join(lines)
     except Exception:
         return ""
@@ -119,7 +134,15 @@ def _parse_response(text: str) -> dict:
 # ---------------------------------------------------------------------------
 
 def run_opencv(photo_path: str, calibration: CalibrationBounds) -> Optional[float]:
-    """Run deterministic CV analysis. Returns surface position (0-100% of jar) or None."""
+    """Run deterministic CV analysis. Returns surface position (0-100% of jar) or None.
+
+    Uses a glass-score (brightness × uniformity) to find the empty glass zone,
+    then detects where it transitions to dough.  The red elastic band is
+    excluded using fondo_y_pct.
+
+    NOTE: OpenCV is a secondary signal — Claude Vision is the primary source.
+    This measurement is only used in fusion when it roughly agrees with Claude.
+    """
     try:
         import cv2
         import numpy as np
@@ -146,37 +169,70 @@ def run_opencv(photo_path: str, calibration: CalibrationBounds) -> Optional[floa
     if cropped.size == 0:
         return None
 
+    crop_h = cropped.shape[0]
+    kernel_size = max(5, int(crop_h * 0.02))
+    kernel = np.ones(kernel_size) / kernel_size
     gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
 
-    # 1D horizontal brightness profile
-    profile = [np.mean(gray[i, :]) for i in range(gray.shape[0])]
+    # Per-row mean brightness and std
+    row_means = np.array([np.mean(gray[i, :].astype(float)) for i in range(crop_h)])
+    row_stds = np.array([np.std(gray[i, :].astype(float)) for i in range(crop_h)])
 
-    kernel_size = max(5, int((base - tope) * 0.02))
-    kernel = np.ones(kernel_size) / kernel_size
-    profile_smooth = np.convolve(profile, kernel, mode="valid")
+    mean_smooth = np.convolve(row_means, kernel, mode="valid")
+    std_smooth = np.convolve(row_stds, kernel, mode="valid")
+    n = len(mean_smooth)
 
-    bright_min = np.min(profile_smooth)
-    bright_max = np.max(profile_smooth)
-    threshold = (bright_min + bright_max) / 2.0
+    # Glass-score: empty glass = BRIGHT (wall behind) + UNIFORM (no texture)
+    # Normalize to 0-1
+    m_min, m_max = mean_smooth.min(), mean_smooth.max()
+    s_min, s_max = std_smooth.min(), std_smooth.max()
+    mean_norm = (mean_smooth - m_min) / (m_max - m_min + 1e-6)
+    std_norm = (std_smooth - s_min) / (s_max - s_min + 1e-6)
+    glass_score = mean_norm * (1 - std_norm)
 
-    # Mask red band glare
+    # Mask band region
+    band_idx = None
     if calibration.fondo_y_pct is not None:
-        fondo_abs = int(height * (calibration.fondo_y_pct / 100.0))
-        fondo_crop_idx = fondo_abs - tope - (kernel_size // 2)
-        band_margin = int((base - tope) * 0.05)
-        for i in range(max(0, fondo_crop_idx - band_margin),
-                       min(len(profile_smooth), fondo_crop_idx + band_margin)):
-            profile_smooth[i] = 0.0
+        band_y_crop = int(height * (calibration.fondo_y_pct / 100.0)) - tope
+        band_idx = band_y_crop - kernel_size // 2
+        band_margin = max(15, int(crop_h * 0.05))
+        b_start = max(0, band_idx - band_margin)
+        b_end = min(n, band_idx + band_margin)
 
-    start_idx = int(len(profile_smooth) * 0.1)
+    cap_end = int(n * 0.05)
+    table_start = int(n * 0.85)
+
+    # Find peak glass-score in upper half (the empty glass zone)
+    upper_end = int(n * 0.55)
+    search = glass_score[cap_end:upper_end].copy()
+    if band_idx is not None:
+        for i in range(len(search)):
+            abs_i = i + cap_end
+            if b_start <= abs_i <= b_end:
+                search[i] = 0
+
+    glass_peak_idx = int(np.argmax(search)) + cap_end
+    glass_peak_val = glass_score[glass_peak_idx]
+
+    # Scan downward from glass peak: surface = where glass_score drops
+    threshold = glass_peak_val * 0.5
+    min_run = max(3, int(n * 0.015))
+    run_count = 0
     meniscus_idx = None
-    for i in range(start_idx, len(profile_smooth)):
-        if profile_smooth[i] > threshold:
-            meniscus_idx = i
-            break
+
+    for i in range(glass_peak_idx, table_start):
+        if band_idx is not None and b_start <= i <= b_end:
+            continue
+        if glass_score[i] < threshold:
+            run_count += 1
+            if run_count >= min_run:
+                meniscus_idx = i - min_run + 1
+                break
+        else:
+            run_count = 0
 
     if meniscus_idx is None:
-        meniscus_idx = int(np.argmax(profile_smooth[start_idx:])) + start_idx
+        meniscus_idx = cap_end
 
     meniscus_idx += (kernel_size // 2)
     best_y = tope + meniscus_idx
@@ -188,11 +244,18 @@ def run_opencv(photo_path: str, calibration: CalibrationBounds) -> Optional[floa
         cv2.line(debug_img, (izq, base), (der, base), (0, 255, 0), 3)
         cv2.line(debug_img, (izq, tope), (der, tope), (255, 255, 0), 3)
         cv2.line(debug_img, (izq, best_y), (der, best_y), (0, 0, 255), 4)
+        # Draw band exclusion zone in magenta
+        if calibration.fondo_y_pct is not None:
+            band_y_abs = int(height * (calibration.fondo_y_pct / 100.0))
+            bm = max(10, int(crop_h * 0.04))
+            cv2.line(debug_img, (izq, band_y_abs - bm), (der, band_y_abs - bm), (255, 0, 255), 1)
+            cv2.line(debug_img, (izq, band_y_abs + bm), (der, band_y_abs + bm), (255, 0, 255), 1)
         cv2.imwrite(photo_path.replace(".jpg", "_cv_debug.jpg"), debug_img)
     except Exception:
         pass
 
-    return round((best_y / height) * 100.0, 2)
+    # Normalize within jar bounds: 0% = fondo (base), 100% = tapa (tope)
+    return round(((base - best_y) / (base - tope)) * 100.0, 2)
 
 
 # ---------------------------------------------------------------------------
@@ -204,6 +267,7 @@ def analyze_photo(
     photo_path: str,
     baseline_foto_path: str | None = None,
     corrections_file: Path | None = None,
+    calibration: "CalibrationBounds | None" = None,
 ) -> dict:
     """Analyze a fermentation photo with Claude Vision.
 
@@ -228,6 +292,19 @@ def analyze_photo(
     if corrections_file:
         corr_ctx = _load_corrections(corrections_file)
 
+    # Calibration context — tell Claude where the band actually is
+    calib_ctx = ""
+    if calibration and calibration.is_complete and calibration.fondo_y_pct is not None:
+        band_jar_pct = (
+            (calibration.base_y_pct - calibration.fondo_y_pct)
+            / (calibration.base_y_pct - calibration.tope_y_pct)
+            * 100
+        )
+        calib_ctx = (
+            f"\nREFERENCIA CALIBRADA: La banda elástica roja está a ~{band_jar_pct:.0f}% del frasco "
+            f"(medido desde el fondo). Esto es un DATO CONOCIDO, úsalo como ancla.\n"
+        )
+
     # Decide if we have a baseline photo for comparative mode
     use_baseline = (
         baseline_foto_path is not None
@@ -244,7 +321,9 @@ def analyze_photo(
         baseline_media = _detect_media_type(baseline_foto_path)
 
         prompt = PROMPT_UNIFIED.format(
-            baseline_context=baseline_ctx, corrections_context=corr_ctx,
+            baseline_context=baseline_ctx,
+            calibration_context=calib_ctx,
+            corrections_context=corr_ctx,
         )
         content = [
             {"type": "image", "source": {"type": "base64", "media_type": baseline_media, "data": baseline_b64}},
@@ -254,6 +333,7 @@ def analyze_photo(
     else:
         prompt = PROMPT_UNIFIED.format(
             baseline_context="Se muestra 1 foto del frasco.",
+            calibration_context=calib_ctx,
             corrections_context=corr_ctx,
         )
         content = [

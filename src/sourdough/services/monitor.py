@@ -81,6 +81,10 @@ class Monitor:
             session = sessions.get_or_create_today()
             log.info("Session #%d (%s)", session.id, session.fecha)
 
+            # Ensure session document exists in Firestore
+            if self._firebase:
+                self._firebase.sync_session(sessions.to_dict(session))
+
             # Run cycle
             self._run_cycle(conn, session, sessions, measurements)
 
@@ -122,21 +126,29 @@ class Monitor:
             if uploaded_photo:
                 log.info("Photo uploaded to Drive: %s", Path(photo_path).name)
 
-        # Pull calibration from Firebase
+        # Pull calibration and cycle markers from Firebase
+        latest_cycle_ts = None
         if self._firebase:
             self._sync_calibration(session, sessions)
             self._sync_corrections(session, measurements)
+            # Pull cycle markers to find the latest refresh/feed event
+            cycle_markers = self._firebase.pull_cycle_markers(session.id)
+            if cycle_markers:
+                latest_cycle_ts = cycle_markers[-1].get("timestamp")
+                log.info("Último ciclo detectado: %s", latest_cycle_ts)
 
         # Refresh session after potential calibration update
         session = sessions.get_by_id(session.id)
 
-        # Baseline
-        baseline_foto = measurements.get_baseline_foto(session.id)
+        # Baseline — use cycle-aware baseline if a cycle was marked
+        baseline_foto = measurements.get_baseline_foto(session.id, latest_cycle_ts)
 
         # Corrections file
         corrections_file = self.config.data_dir / "dataset_corrections.json"
 
         # Analyze: Claude Vision
+        calibration = session.calibration if session.is_calibrated else None
+
         log.info("Enviando foto a Claude Vision...")
         try:
             claude_result = analyze_photo(
@@ -144,12 +156,12 @@ class Monitor:
                 photo_path=photo_path,
                 baseline_foto_path=baseline_foto,
                 corrections_file=corrections_file if corrections_file.exists() else None,
+                calibration=calibration,
             )
             log.info("Claude: %s", json.dumps(claude_result, indent=2, ensure_ascii=False))
 
             # Analyze: OpenCV (independent)
             cv_altura = None
-            calibration = session.calibration if session.is_calibrated else None
             if calibration and calibration.is_complete:
                 try:
                     cv_altura = run_opencv(photo_path, calibration)
@@ -169,8 +181,12 @@ class Monitor:
                     log.warning("ML prediction error: %s", e)
 
             # Fuse all measurements and calculate growth
-            baseline_altura = measurements.get_baseline_altura(session.id)
-            merged = compute_measurement(claude_result, cv_altura, baseline_altura, ml_altura)
+            baseline_altura = measurements.get_baseline_altura(session.id, latest_cycle_ts)
+            is_new_cycle = latest_cycle_ts is not None and baseline_altura is None
+            merged = compute_measurement(
+                claude_result, cv_altura, baseline_altura, ml_altura,
+                is_new_cycle=is_new_cycle,
+            )
 
             # Save to DB
             measurement = measurements.save(session.id, photo_path, merged)

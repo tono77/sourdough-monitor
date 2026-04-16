@@ -186,23 +186,43 @@ class MeasurementRepository:
         ).fetchone()
         return float(row[0]) if row else None
 
-    def get_baseline_altura(self, session_id: int) -> Optional[float]:
-        """Get the first measurement's fused surface position for growth calculation."""
-        row = self._conn.execute(
-            "SELECT altura_pct FROM mediciones "
-            "WHERE sesion_id = ? AND altura_pct IS NOT NULL "
-            "ORDER BY id ASC LIMIT 1",
-            (session_id,),
-        ).fetchone()
+    def get_baseline_altura(self, session_id: int, after_timestamp: str | None = None) -> Optional[float]:
+        """Get the first measurement's fused surface position for growth calculation.
+
+        If after_timestamp is provided, returns the first measurement after that
+        timestamp (used for cycle-aware baseline after a refresh).
+        """
+        if after_timestamp:
+            row = self._conn.execute(
+                "SELECT altura_pct FROM mediciones "
+                "WHERE sesion_id = ? AND altura_pct IS NOT NULL AND timestamp > ? "
+                "ORDER BY id ASC LIMIT 1",
+                (session_id, after_timestamp),
+            ).fetchone()
+        else:
+            row = self._conn.execute(
+                "SELECT altura_pct FROM mediciones "
+                "WHERE sesion_id = ? AND altura_pct IS NOT NULL "
+                "ORDER BY id ASC LIMIT 1",
+                (session_id,),
+            ).fetchone()
         return float(row[0]) if row else None
 
-    def get_baseline_foto(self, session_id: int) -> Optional[str]:
-        row = self._conn.execute(
-            "SELECT foto_path FROM mediciones "
-            "WHERE sesion_id = ? AND foto_path IS NOT NULL "
-            "ORDER BY id ASC LIMIT 1",
-            (session_id,),
-        ).fetchone()
+    def get_baseline_foto(self, session_id: int, after_timestamp: str | None = None) -> Optional[str]:
+        if after_timestamp:
+            row = self._conn.execute(
+                "SELECT foto_path FROM mediciones "
+                "WHERE sesion_id = ? AND foto_path IS NOT NULL AND timestamp > ? "
+                "ORDER BY id ASC LIMIT 1",
+                (session_id, after_timestamp),
+            ).fetchone()
+        else:
+            row = self._conn.execute(
+                "SELECT foto_path FROM mediciones "
+                "WHERE sesion_id = ? AND foto_path IS NOT NULL "
+                "ORDER BY id ASC LIMIT 1",
+                (session_id,),
+            ).fetchone()
         return row[0] if row else None
 
     def get_first_timestamp(self, session_id: int) -> Optional[str]:

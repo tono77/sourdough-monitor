@@ -159,6 +159,22 @@ class FirebaseClient:
             log.warning("Firestore pull corrections error: %s", e)
             return []
 
+    def pull_cycle_markers(self, session_id: int) -> list[dict]:
+        """Pull cycle markers (is_ciclo=true) from Firestore mediciones."""
+        if self._db is None:
+            return []
+        try:
+            meds_ref = (
+                self._db.collection("sesiones").document(str(session_id))
+                .collection("mediciones")
+            )
+            docs = meds_ref.where("is_ciclo", "==", True).get()
+            markers = [d.to_dict() for d in docs]
+            return sorted(markers, key=lambda x: x.get("timestamp", ""))
+        except Exception as e:
+            log.warning("Firestore pull cycle markers error: %s", e)
+            return []
+
     def sync_bread_window(self, session_id: int, state: str, timestamp: str) -> bool:
         """Update bread window state on the session document.
 
