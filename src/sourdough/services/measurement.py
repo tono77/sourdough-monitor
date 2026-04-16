@@ -11,11 +11,13 @@ from typing import Optional
 log = logging.getLogger(__name__)
 
 # Weights for fusion (higher = more trusted)
-CLAUDE_WEIGHT = 5.0
-CV_WEIGHT = 3.0
-ML_WEIGHT = 4.0
-# If OpenCV disagrees with Claude by more than this, discard OpenCV
-CV_MAX_DISAGREEMENT = 25.0
+# OpenCV (HSV) is the most reliable — deterministic, calibrated.
+# Claude struggles with translucent dough.
+# ML excluded from fusion until retrained with better ground truth.
+CV_WEIGHT = 5.0
+CLAUDE_WEIGHT = 3.0
+# When Claude and OpenCV disagree, trust OpenCV (not Claude)
+DISAGREEMENT_THRESHOLD = 20.0
 
 
 def compute_measurement(
@@ -189,33 +191,40 @@ def _fuse(
     cv_altura: float | None,
     ml_altura: float | None = None,
 ) -> tuple[Optional[float], Optional[str]]:
-    """Weighted average of all available position sources.
+    """Weighted fusion — OpenCV is primary when available, Claude secondary.
+
+    When OpenCV and Claude disagree strongly, Claude is discarded (not OpenCV),
+    because Claude consistently misreads translucent dough as empty glass.
 
     Returns:
         (fused_altura, source_label)
     """
     sources: list[tuple[float, float, str]] = []  # (value, weight, name)
 
-    # Claude is always included as the primary source — it understands
-    # the image semantically and measures the solid dough surface.
-    if claude_altura is not None:
-        c_weight = min(float(claude_confianza), CLAUDE_WEIGHT) if claude_confianza else CLAUDE_WEIGHT
-        sources.append((claude_altura, c_weight, "claude"))
-
-    # OpenCV is included only if it roughly agrees with Claude.
-    # OpenCV can be confused by glass markings, the red band, and lighting
-    # changes, so when it disagrees strongly, Claude is more reliable.
+    # OpenCV is the primary source when calibrated — deterministic and reliable.
     if cv_altura is not None:
-        if claude_altura is not None and abs(cv_altura - claude_altura) > CV_MAX_DISAGREEMENT:
-            log.info("OpenCV descartado: %.1f%% vs Claude %.1f%% (diff > %d%%)",
-                     cv_altura, claude_altura, CV_MAX_DISAGREEMENT)
-        else:
-            sources.append((cv_altura, CV_WEIGHT, "opencv"))
+        sources.append((cv_altura, CV_WEIGHT, "opencv"))
 
+    # Claude is included only if it roughly agrees with OpenCV.
+    # Claude struggles with translucent dough and ml markings on the jar.
+    if claude_altura is not None:
+        if cv_altura is not None and abs(cv_altura - claude_altura) > DISAGREEMENT_THRESHOLD:
+            log.info("Claude descartado: %.1f%% vs OpenCV %.1f%% (diff > %d%%)",
+                     claude_altura, cv_altura, DISAGREEMENT_THRESHOLD)
+        else:
+            c_weight = min(float(claude_confianza), CLAUDE_WEIGHT) if claude_confianza else CLAUDE_WEIGHT
+            sources.append((claude_altura, c_weight, "claude"))
+
+    # ML model excluded — undertrained, consistently reads ~38% regardless of actual level.
+    # Will be re-added after retraining with corrected ground truth data.
     if ml_altura is not None:
-        sources.append((ml_altura, ML_WEIGHT, "ml"))
+        log.info("ML ignorado (no incluido en fusión): %.1f%%", ml_altura)
 
     if not sources:
+        # No instrumental sources — fall back to Claude alone
+        if claude_altura is not None:
+            c_weight = min(float(claude_confianza), CLAUDE_WEIGHT) if claude_confianza else CLAUDE_WEIGHT
+            return round(claude_altura, 1), "claude"
         return None, None
 
     if len(sources) == 1:
