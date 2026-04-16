@@ -71,7 +71,7 @@ export function initCharts() {
                 pointStyle: 'star',
                 showLine: false,
             }, {
-                label: 'Meta Duplicacion (100%)',
+                label: 'Umbral Pan (90%)',
                 data: [],
                 borderColor: 'rgba(76, 175, 80, 0.8)',
                 borderWidth: 2,
@@ -203,7 +203,7 @@ export function initCharts() {
                 pointBorderWidth: 2,
             },
             {
-                label: 'Meta Duplicacion (100%)',
+                label: 'Umbral Pan (90%)',
                 data: [],
                 borderColor: 'rgba(76, 175, 80, 0.8)',
                 borderWidth: 2,
@@ -297,7 +297,7 @@ export function updateCharts(measurements, gd, session) {
         .map(({ m, i }) => ({ x: new Date(m.timestamp), y: growthArr[i] }));
 
     levelChart.data.datasets[2].data = validMeds.map(m => ({
-        x: new Date(m.timestamp), y: 100
+        x: new Date(m.timestamp), y: 90
     }));
     levelChart.update('none');
 

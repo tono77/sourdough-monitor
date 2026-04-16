@@ -316,7 +316,7 @@ function selectSession(sessionId) {
                 if (inicio) {
                     const t = new Date(inicio);
                     document.getElementById('breadWindowInfo').textContent =
-                        `Desde las ${t.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })} — tu masa madre superó el 100%`;
+                        `Desde las ${t.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })} — tu masa madre superó el 90%`;
                 }
             } else {
                 breadBanner.classList.remove('visible');
