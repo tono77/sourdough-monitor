@@ -25,6 +25,12 @@ DISAGREEMENT_THRESHOLD = 20.0
 # these extremes AND Claude strongly disagrees, prefer Claude.
 CV_SATURATION_HIGH = 98.0
 CV_SATURATION_LOW = 2.0
+# Second circuit breaker: even below saturation, if Claude is internally
+# coherent (reports both altura AND banda) and CV disagrees massively
+# (>= 40%), prefer Claude. This catches the case where CV latches onto a
+# wrong band (e.g. tablecloth stripe, ml markings) and reports a plausibly-
+# non-saturated but still very wrong altura (~89% incident on 2026-04-17).
+HUGE_DISAGREEMENT_THRESHOLD = 40.0
 
 
 def compute_measurement(
@@ -68,6 +74,18 @@ def compute_measurement(
             "OpenCV saturado descartado: CV=%.1f%% (extremo), Claude=%.1f%% "
             "(banda=%.1f%%). Probable falla por reflejos/marcas del vidrio.",
             cv_altura, claude_altura, claude_banda,
+        )
+        cv_altura = None
+
+    # Second circuit breaker: massive disagreement + coherent Claude → trust
+    # Claude. Catches non-saturated CV failures where the band anchor drifts
+    # (e.g. CV detected band on tablecloth stripe instead of the real red band).
+    if (cv_altura is not None and claude_coherent
+            and abs(cv_altura - claude_altura) >= HUGE_DISAGREEMENT_THRESHOLD):
+        log.warning(
+            "OpenCV descartado por desacuerdo masivo: CV=%.1f%%, Claude=%.1f%% "
+            "(banda=%.1f%%, diff>=%.0f). Probable fallo en detección de banda.",
+            cv_altura, claude_altura, claude_banda, HUGE_DISAGREEMENT_THRESHOLD,
         )
         cv_altura = None
 

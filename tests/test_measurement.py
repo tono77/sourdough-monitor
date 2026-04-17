@@ -110,6 +110,39 @@ class TestFusion:
         assert "opencv" in result["fuente"]
         assert result["altura_pct"] > 90.0
 
+    def test_cv_huge_disagreement_discarded(self):
+        """CV below saturation but massively disagrees with coherent Claude → discard CV.
+
+        Reproduces 2026-04-17 06:21 incident: CV detected band on tablecloth and
+        reported altura=89.6% while Claude saw 16.5% with banda=41.0%.
+        Diff=73 >= HUGE_DISAGREEMENT_THRESHOLD (40) → discard CV.
+        """
+        result = compute_measurement(
+            claude_result={
+                "altura_pct": 16.5, "banda_pct": 41.0, "confianza": 3,
+                "burbujas": "pocas", "textura": "lisa",
+            },
+            cv_altura=89.6,
+            baseline_altura=28.0,
+        )
+        assert result["altura_pct"] == 16.5
+        assert result["fuente"] == "claude"
+
+    def test_cv_moderate_disagreement_spatial_applies(self):
+        """CV below saturation and moderate disagreement (< 40%) → spatial check still applies."""
+        result = compute_measurement(
+            claude_result={
+                "altura_pct": 28.0, "banda_pct": 41.0, "confianza": 3,
+                "burbujas": "pocas", "textura": "lisa",
+            },
+            cv_altura=43.4,
+            baseline_altura=28.0,
+        )
+        # Diff=15.4 < 40, new rule doesn't fire. Spatial check fires
+        # (Claude<banda, CV>banda) → Claude discarded, CV kept.
+        assert result["altura_pct"] == 43.4
+        assert result["fuente"] == "opencv"
+
     def test_cv_saturated_kept_when_claude_incoherent(self):
         """If Claude doesn't report banda_pct, circuit breaker can't verify → keep CV."""
         result = compute_measurement(
@@ -226,8 +259,13 @@ class TestBackwardsCompatibility:
 class TestSpatialConsistency:
     """Tests for the translucent dough override logic."""
 
-    def test_claude_below_band_opencv_above_discards_claude(self):
-        """When Claude says mass < band but OpenCV says mass > band, discard Claude."""
+    def test_claude_below_band_opencv_above_huge_diff_discards_opencv(self):
+        """When Claude is coherent and diff >= 40%, trust Claude (post-2026-04-17 rule).
+
+        This inverts the older spatial-consistency heuristic: massive disagreement
+        between a coherent Claude and CV is more likely a CV band-detection failure
+        than translucent-dough confusion by Claude.
+        """
         result = compute_measurement(
             claude_result={
                 "altura_pct": 16.0, "banda_pct": 41.0, "confianza": 3,
@@ -236,9 +274,23 @@ class TestSpatialConsistency:
             cv_altura=70.0,
             baseline_altura=30.0,
         )
-        # Claude discarded (spatial check + disagreement), should use opencv
+        # diff=54 >= HUGE_DISAGREEMENT_THRESHOLD (40) → discard CV
+        assert result["fuente"] == "claude"
+        assert result["altura_pct"] == 16.0
+
+    def test_claude_below_band_opencv_moderate_diff_discards_claude(self):
+        """When diff < 40%, the spatial consistency check still discards Claude."""
+        result = compute_measurement(
+            claude_result={
+                "altura_pct": 25.0, "banda_pct": 41.0, "confianza": 3,
+                "burbujas": "pocas", "textura": "rugosa",
+            },
+            cv_altura=55.0,
+            baseline_altura=30.0,
+        )
+        # diff=30 < 40 → huge-diff rule skipped; spatial check fires → Claude discarded
         assert result["fuente"] == "opencv"
-        assert result["altura_pct"] == 70.0
+        assert result["altura_pct"] == 55.0
 
     def test_claude_above_band_keeps_claude(self):
         """When Claude and OpenCV roughly agree, fuse normally."""
@@ -266,18 +318,18 @@ class TestSpatialConsistency:
         assert result["altura_pct"] == 16.0
 
     def test_opencv_alone_after_claude_discarded(self):
-        """When Claude is discarded, OpenCV is sole source (ML excluded from fusion)."""
+        """When Claude is discarded by spatial check (moderate diff), CV is sole source."""
         result = compute_measurement(
             claude_result={
-                "altura_pct": 16.0, "banda_pct": 41.0, "confianza": 3,
+                "altura_pct": 25.0, "banda_pct": 41.0, "confianza": 3,
                 "burbujas": "pocas", "textura": "rugosa",
             },
-            cv_altura=70.0,
+            cv_altura=55.0,
             baseline_altura=30.0,
-            ml_altura=65.0,
+            ml_altura=50.0,
         )
         assert result["fuente"] == "opencv"
-        assert result["altura_pct"] == 70.0
+        assert result["altura_pct"] == 55.0
 
 
 class TestCycleAwareNotes:
