@@ -66,6 +66,64 @@ class TestFusion:
         assert result["crecimiento_pct"] is None
         assert result["fuente"] is None
 
+    def test_cv_saturated_high_discarded(self):
+        """OpenCV at 100% (saturated to lid_end) with coherent Claude disagreement → discard CV.
+
+        Reproduces the 2026-04-17 06:00 incident: flash reflections on empty glass above
+        band were read as dough, CV saturated to 100%, Claude correctly read 41%.
+        """
+        result = compute_measurement(
+            claude_result={
+                "altura_pct": 41.0, "banda_pct": 41.0, "confianza": 2,
+                "burbujas": "pocas", "textura": "lisa",
+            },
+            cv_altura=100.0,
+            baseline_altura=30.5,
+        )
+        assert result["altura_pct"] == 41.0
+        assert result["fuente"] == "claude"
+
+    def test_cv_saturated_low_discarded(self):
+        """OpenCV at ~0% (saturated empty) with coherent Claude disagreement → discard CV."""
+        result = compute_measurement(
+            claude_result={
+                "altura_pct": 55.0, "banda_pct": 41.0, "confianza": 4,
+                "burbujas": "muchas", "textura": "muy_activa",
+            },
+            cv_altura=1.0,
+            baseline_altura=30.0,
+        )
+        assert result["altura_pct"] == 55.0
+        assert result["fuente"] == "claude"
+
+    def test_cv_high_kept_when_claude_agrees(self):
+        """OpenCV at 98% is legitimate if Claude also reads high (dough actually filled jar)."""
+        result = compute_measurement(
+            claude_result={
+                "altura_pct": 95.0, "banda_pct": 41.0, "confianza": 5,
+                "burbujas": "muchas", "textura": "muy_activa",
+            },
+            cv_altura=98.0,
+            baseline_altura=30.0,
+        )
+        # Claude and CV agree (diff=3 < 20) → fused, CV not discarded
+        assert "opencv" in result["fuente"]
+        assert result["altura_pct"] > 90.0
+
+    def test_cv_saturated_kept_when_claude_incoherent(self):
+        """If Claude doesn't report banda_pct, circuit breaker can't verify → keep CV."""
+        result = compute_measurement(
+            claude_result={
+                "altura_pct": 41.0, "confianza": 2,  # no banda_pct
+                "burbujas": "pocas", "textura": "lisa",
+            },
+            cv_altura=100.0,
+            baseline_altura=30.5,
+        )
+        # Circuit breaker skipped (no banda_pct), Claude discarded by normal diff>20 rule
+        assert result["altura_pct"] == 100.0
+        assert result["fuente"] == "opencv"
+
 
 class TestGrowthCalculation:
 

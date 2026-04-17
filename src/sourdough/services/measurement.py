@@ -18,6 +18,13 @@ CV_WEIGHT = 5.0
 CLAUDE_WEIGHT = 3.0
 # When Claude and OpenCV disagree, trust OpenCV (not Claude)
 DISAGREEMENT_THRESHOLD = 20.0
+# Circuit breaker: OpenCV saturating to an extreme (full jar or empty jar)
+# is a known failure mode — the `scan_up` loop falls back to `lid_end` when
+# it can't find a dough→glass transition (flash reflections, ml markings on
+# empty glass above the band can read as "textured" = dough). When CV hits
+# these extremes AND Claude strongly disagrees, prefer Claude.
+CV_SATURATION_HIGH = 98.0
+CV_SATURATION_LOW = 2.0
 
 
 def compute_measurement(
@@ -43,13 +50,33 @@ def compute_measurement(
     # --- Layer 1: Extract and fuse surface position ---
     claude_altura = _extract_claude_altura(claude_result)
     claude_confianza = claude_result.get("confianza")
+    claude_banda = claude_result.get("banda_pct")
+
+    # Circuit breaker: OpenCV saturated to an extreme AND Claude is
+    # internally consistent (reports both altura and banda) and strongly
+    # disagrees → discard OpenCV. Saturation is a known failure mode where
+    # the scan_up loop can't find the dough→glass transition.
+    cv_saturated = cv_altura is not None and (
+        cv_altura >= CV_SATURATION_HIGH or cv_altura <= CV_SATURATION_LOW
+    )
+    claude_coherent = (
+        claude_altura is not None and claude_banda is not None
+    )
+    if (cv_saturated and claude_coherent and cv_altura is not None
+            and abs(cv_altura - claude_altura) > DISAGREEMENT_THRESHOLD):
+        log.warning(
+            "OpenCV saturado descartado: CV=%.1f%% (extremo), Claude=%.1f%% "
+            "(banda=%.1f%%). Probable falla por reflejos/marcas del vidrio.",
+            cv_altura, claude_altura, claude_banda,
+        )
+        cv_altura = None
 
     # Spatial consistency check: if Claude says mass is below band but
     # OpenCV says mass is well above, Claude is likely misreading the
     # translucent dough as empty glass. Override with OpenCV.
-    claude_banda = claude_result.get("banda_pct")
-    if (claude_altura is not None and claude_banda is not None
-            and cv_altura is not None
+    # (Skipped when CV was already discarded by the circuit breaker.)
+    if (cv_altura is not None
+            and claude_altura is not None and claude_banda is not None
             and claude_altura < claude_banda  # Claude says mass below band
             and cv_altura > claude_banda):     # OpenCV says mass above band
         log.warning(
