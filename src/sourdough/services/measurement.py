@@ -42,6 +42,10 @@ def compute_measurement(
     baseline_altura: float | None,
     ml_altura: float | None = None,
     is_new_cycle: bool = False,
+    scale: dict | None = None,
+    calibration: "object | None" = None,
+    image_height: int | None = None,
+    baseline_volumen_ml: float | None = None,
 ) -> dict:
     """Fuse Claude + OpenCV + ML readings and compute growth.
 
@@ -52,6 +56,12 @@ def compute_measurement(
         ml_altura: ML model surface position (0-100% of jar), or None.
         is_new_cycle: True if a cycle marker was recently set and this is
             the first or an early measurement in the new cycle.
+        scale: Optional dict from scale_detector.detect_scale() with
+            px_per_50ml and band_y for absolute volume calibration.
+        calibration: CalibrationBounds used to back-convert altura_pct → pixel y.
+        image_height: Image height in pixels (needed for back-conversion).
+        baseline_volumen_ml: First measurement's volumen_ml for this cycle
+            (for ml-based growth calculation).
 
     Returns:
         Dict with standardized fields ready for DB storage.
@@ -130,6 +140,11 @@ def compute_measurement(
         opinion_panadero=claude_result.get("opinion_panadero", ""),
     )
 
+    # --- Optional: convert altura_pct → volumen_ml using scale calibration ---
+    volumen_ml, crecimiento_ml, crecimiento_ml_pct = _to_ml(
+        altura_pct, scale, calibration, image_height, baseline_volumen_ml,
+    )
+
     # --- Build merged result ---
     merged = {
         # Qualitative (pass-through from Claude)
@@ -141,6 +156,10 @@ def compute_measurement(
         "altura_pct": altura_pct,
         "crecimiento_pct": crecimiento_pct,
         "fuente": fuente,
+        # Volumetric (ml-based) — None when scale not detected
+        "volumen_ml": volumen_ml,
+        "crecimiento_ml": crecimiento_ml,
+        "crecimiento_ml_pct": crecimiento_ml_pct,
         # Backwards compatibility
         "nivel_pct": crecimiento_pct,
         "altura_y_pct": altura_pct,
@@ -226,6 +245,51 @@ def _generate_notas(
     if opinion_panadero:
         result += f". 🧑‍🍳 {opinion_panadero}"
     return result
+
+
+def _to_ml(
+    altura_pct: float | None,
+    scale: dict | None,
+    calibration,
+    image_height: int | None,
+    baseline_volumen_ml: float | None,
+) -> tuple[float | None, float | None, float | None]:
+    """Convert altura_pct (percentage of jar height) to volumen_ml via scale.
+
+    Returns (volumen_ml, crecimiento_ml, crecimiento_ml_pct). All None if
+    calibration or scale data is missing.
+    """
+    if (altura_pct is None or scale is None or calibration is None
+            or image_height is None or scale.get("band_y") is None):
+        return None, None, None
+    if not getattr(calibration, "is_complete", False):
+        return None, None, None
+
+    # Back-convert altura_pct (0-100) to pixel y in the ORIGINAL image.
+    # altura_pct is measured as % of jar vertical extent (base_y to tope_y),
+    # where 0% = jar bottom, 100% = jar top.
+    base_y = calibration.base_y_pct * image_height / 100.0
+    tope_y = calibration.tope_y_pct * image_height / 100.0
+    altura_y_pixels = base_y - (altura_pct / 100.0) * (base_y - tope_y)
+
+    # Convert to ml using band anchor (300ml) and px_per_50ml
+    from sourdough.services.scale_detector import y_to_ml
+    volumen_ml = round(y_to_ml(altura_y_pixels, scale, scale["band_y"]), 1)
+    # Clamp to the jar's actual scale range (50-650ml)
+    volumen_ml = max(0.0, min(700.0, volumen_ml))
+
+    crecimiento_ml = None
+    crecimiento_ml_pct = None
+    if baseline_volumen_ml is None:
+        crecimiento_ml = 0.0
+        crecimiento_ml_pct = 0.0
+    elif baseline_volumen_ml > 0:
+        crecimiento_ml = round(volumen_ml - baseline_volumen_ml, 1)
+        crecimiento_ml_pct = round(
+            (crecimiento_ml / baseline_volumen_ml) * 100.0, 1
+        )
+
+    return volumen_ml, crecimiento_ml, crecimiento_ml_pct
 
 
 def _extract_claude_altura(result: dict) -> float | None:

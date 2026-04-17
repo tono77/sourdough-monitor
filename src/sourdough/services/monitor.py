@@ -22,6 +22,7 @@ from sourdough.services import capture as capture_svc
 from sourdough.services import charting, peak_detector, timelapse
 from sourdough.services.analyzer import analyze_photo, run_opencv
 from sourdough.services.measurement import compute_measurement
+from sourdough.services.scale_detector import detect_scale
 from sourdough.services.bread_window import check_bread_window
 
 log = logging.getLogger(__name__)
@@ -203,12 +204,30 @@ class Monitor:
                 except Exception as e:
                     log.warning("ML prediction error: %s", e)
 
+            # Detect ml scale for absolute volume calibration (optional enrichment)
+            scale = None
+            image_height = None
+            try:
+                scale = detect_scale(photo_path)
+                if scale is not None:
+                    import cv2
+                    _img = cv2.imread(photo_path)
+                    if _img is not None:
+                        image_height = _img.shape[0]
+            except Exception as e:
+                log.warning("Scale detection error: %s", e)
+
             # Fuse all measurements and calculate growth
             baseline_altura = measurements.get_baseline_altura(session.id, latest_cycle_ts)
+            baseline_volumen_ml = measurements.get_baseline_volumen_ml(session.id, latest_cycle_ts)
             is_new_cycle = latest_cycle_ts is not None and baseline_altura is None
             merged = compute_measurement(
                 claude_result, cv_altura, baseline_altura, ml_altura,
                 is_new_cycle=is_new_cycle,
+                scale=scale,
+                calibration=calibration,
+                image_height=image_height,
+                baseline_volumen_ml=baseline_volumen_ml,
             )
 
             # Save to DB

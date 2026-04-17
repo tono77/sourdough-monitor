@@ -372,27 +372,49 @@ function updateDashboard(session, measurements) {
     const currentGrowth = latestValidIdx >= 0 ? gd.growthArr[latestValidIdx] : null;
     const prevGrowth    = latestValidIdx >= 1 ? gd.growthArr[latestValidIdx - 1] : null;
 
-    // Level metric — shows absolute jar level (altura_pct)
+    // Level metric — prefer volumen_ml (absolute, from jar's printed scale)
+    // and fall back to altura_pct when the ml scale isn't detected.
     if (latest) {
-        const currentLevel = latest.altura_pct != null ? parseFloat(latest.altura_pct) : null;
         const prevMed = gd && latestValidIdx >= 1 ? gd.validMeds[latestValidIdx - 1] : null;
-        const prevLevel = prevMed && prevMed.altura_pct != null ? parseFloat(prevMed.altura_pct) : null;
+        const hasMl = latest.volumen_ml != null;
 
-        document.getElementById('levelValue').textContent =
-            currentLevel != null ? `${currentLevel.toFixed(0)}%` : '--';
+        if (hasMl) {
+            const currentMl = parseFloat(latest.volumen_ml);
+            const prevMl = prevMed && prevMed.volumen_ml != null ? parseFloat(prevMed.volumen_ml) : null;
 
-        if (prevLevel != null && currentLevel != null) {
-            const diff = currentLevel - prevLevel;
-            let arrow = '→';
-            let color = '#888';
-            if (diff > 0.5) { arrow = '↑'; color = '#4caf50'; }
-            else if (diff < -0.5) { arrow = '↓'; color = '#e94560'; }
+            document.getElementById('levelValue').textContent = `${currentMl.toFixed(0)}ml`;
 
-            const sign = diff > 0 ? '+' : '';
-            const sub = document.getElementById('levelSub');
-            sub.textContent = `${arrow} ${sign}${diff.toFixed(1)}%`;
-            sub.style.color = color;
-            document.getElementById('levelVsAnterior').textContent = 'vs medicion anterior';
+            if (prevMl != null) {
+                const diffMl = currentMl - prevMl;
+                let arrow = '→', color = '#888';
+                if (diffMl > 2) { arrow = '↑'; color = '#4caf50'; }
+                else if (diffMl < -2) { arrow = '↓'; color = '#e94560'; }
+                const sign = diffMl > 0 ? '+' : '';
+                const sub = document.getElementById('levelSub');
+                sub.textContent = `${arrow} ${sign}${diffMl.toFixed(0)}ml`;
+                sub.style.color = color;
+                document.getElementById('levelVsAnterior').textContent = 'vs medicion anterior';
+            }
+        } else {
+            const currentLevel = latest.altura_pct != null ? parseFloat(latest.altura_pct) : null;
+            const prevLevel = prevMed && prevMed.altura_pct != null ? parseFloat(prevMed.altura_pct) : null;
+
+            document.getElementById('levelValue').textContent =
+                currentLevel != null ? `${currentLevel.toFixed(0)}%` : '--';
+
+            if (prevLevel != null && currentLevel != null) {
+                const diff = currentLevel - prevLevel;
+                let arrow = '→';
+                let color = '#888';
+                if (diff > 0.5) { arrow = '↑'; color = '#4caf50'; }
+                else if (diff < -0.5) { arrow = '↓'; color = '#e94560'; }
+
+                const sign = diff > 0 ? '+' : '';
+                const sub = document.getElementById('levelSub');
+                sub.textContent = `${arrow} ${sign}${diff.toFixed(1)}%`;
+                sub.style.color = color;
+                document.getElementById('levelVsAnterior').textContent = 'vs medicion anterior';
+            }
         }
 
         const bub = bubbleDisplay[latest.burbujas] || { emoji: '--', text: '--' };

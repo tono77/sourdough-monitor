@@ -208,6 +208,24 @@ class MeasurementRepository:
             ).fetchone()
         return float(row[0]) if row else None
 
+    def get_baseline_volumen_ml(self, session_id: int, after_timestamp: str | None = None) -> Optional[float]:
+        """Get the first measurement's volumen_ml for ml-based growth calculation."""
+        if after_timestamp:
+            row = self._conn.execute(
+                "SELECT volumen_ml FROM mediciones "
+                "WHERE sesion_id = ? AND volumen_ml IS NOT NULL AND timestamp > ? "
+                "ORDER BY id ASC LIMIT 1",
+                (session_id, after_timestamp),
+            ).fetchone()
+        else:
+            row = self._conn.execute(
+                "SELECT volumen_ml FROM mediciones "
+                "WHERE sesion_id = ? AND volumen_ml IS NOT NULL "
+                "ORDER BY id ASC LIMIT 1",
+                (session_id,),
+            ).fetchone()
+        return float(row[0]) if row else None
+
     def get_baseline_foto(self, session_id: int, after_timestamp: str | None = None) -> Optional[str]:
         if after_timestamp:
             row = self._conn.execute(
@@ -252,8 +270,9 @@ class MeasurementRepository:
             "INSERT INTO mediciones "
             "(sesion_id, timestamp, foto_path, nivel_pct, "
             " burbujas, textura, notas, confianza, modo_analisis, "
-            " altura_y_pct, altura_pct, crecimiento_pct, fuente) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " altura_y_pct, altura_pct, crecimiento_pct, fuente, "
+            " volumen_ml, crecimiento_ml, crecimiento_ml_pct) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 session_id,
                 timestamp,
@@ -268,6 +287,9 @@ class MeasurementRepository:
                 merged.get("altura_pct"),
                 merged.get("crecimiento_pct"),
                 merged.get("fuente"),
+                merged.get("volumen_ml"),
+                merged.get("crecimiento_ml"),
+                merged.get("crecimiento_ml_pct"),
             ),
         )
         self._conn.execute(
@@ -290,6 +312,9 @@ class MeasurementRepository:
             altura_pct=merged.get("altura_pct"),
             crecimiento_pct=merged.get("crecimiento_pct"),
             fuente=merged.get("fuente"),
+            volumen_ml=merged.get("volumen_ml"),
+            crecimiento_ml=merged.get("crecimiento_ml"),
+            crecimiento_ml_pct=merged.get("crecimiento_ml_pct"),
         )
 
     def apply_corrections(self, session_id: int, corrections: list[dict]) -> int:

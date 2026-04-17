@@ -103,6 +103,9 @@ class FirebaseClient:
                 "altura_pct": measurement_data.get("altura_pct"),
                 "crecimiento_pct": measurement_data.get("crecimiento_pct"),
                 "fuente": measurement_data.get("fuente"),
+                "volumen_ml": measurement_data.get("volumen_ml"),
+                "crecimiento_ml": measurement_data.get("crecimiento_ml"),
+                "crecimiento_ml_pct": measurement_data.get("crecimiento_ml_pct"),
                 "foto_base64": foto_base64,
             }
 
