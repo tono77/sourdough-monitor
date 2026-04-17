@@ -278,19 +278,37 @@ class TestSpatialConsistency:
         assert result["fuente"] == "claude"
         assert result["altura_pct"] == 16.0
 
-    def test_claude_below_band_opencv_moderate_diff_discards_claude(self):
-        """When diff < 40%, the spatial consistency check still discards Claude."""
+    def test_claude_below_band_opencv_small_diff_discards_claude(self):
+        """When diff < 25%, the spatial consistency check still discards Claude."""
         result = compute_measurement(
             claude_result={
-                "altura_pct": 25.0, "banda_pct": 41.0, "confianza": 3,
+                "altura_pct": 35.0, "banda_pct": 41.0, "confianza": 3,
                 "burbujas": "pocas", "textura": "rugosa",
             },
             cv_altura=55.0,
             baseline_altura=30.0,
         )
-        # diff=30 < 40 → huge-diff rule skipped; spatial check fires → Claude discarded
+        # diff=20 < 25 → huge-diff rule skipped; spatial check fires → Claude discarded
         assert result["fuente"] == "opencv"
         assert result["altura_pct"] == 55.0
+
+    def test_cv_foam_overshoot_discarded(self):
+        """CV scans through foam during peak fermentation → coherent Claude wins.
+
+        Reproduces 2026-04-17 12:11 incident: CV read 88.6% (scanned up through
+        the bubbly layer to the lid) while Claude coherently reported 57% with
+        banda=41%. Diff=31.6 >= 25 → discard CV.
+        """
+        result = compute_measurement(
+            claude_result={
+                "altura_pct": 57.0, "banda_pct": 41.0, "confianza": 4,
+                "burbujas": "muchas", "textura": "muy_activa",
+            },
+            cv_altura=88.6,
+            baseline_altura=30.5,
+        )
+        assert result["altura_pct"] == 57.0
+        assert result["fuente"] == "claude"
 
     def test_claude_above_band_keeps_claude(self):
         """When Claude and OpenCV roughly agree, fuse normally."""
@@ -318,10 +336,10 @@ class TestSpatialConsistency:
         assert result["altura_pct"] == 16.0
 
     def test_opencv_alone_after_claude_discarded(self):
-        """When Claude is discarded by spatial check (moderate diff), CV is sole source."""
+        """When Claude is discarded by spatial check (small diff), CV is sole source."""
         result = compute_measurement(
             claude_result={
-                "altura_pct": 25.0, "banda_pct": 41.0, "confianza": 3,
+                "altura_pct": 35.0, "banda_pct": 41.0, "confianza": 3,
                 "burbujas": "pocas", "textura": "rugosa",
             },
             cv_altura=55.0,

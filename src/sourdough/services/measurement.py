@@ -26,11 +26,14 @@ DISAGREEMENT_THRESHOLD = 20.0
 CV_SATURATION_HIGH = 98.0
 CV_SATURATION_LOW = 2.0
 # Second circuit breaker: even below saturation, if Claude is internally
-# coherent (reports both altura AND banda) and CV disagrees massively
-# (>= 40%), prefer Claude. This catches the case where CV latches onto a
-# wrong band (e.g. tablecloth stripe, ml markings) and reports a plausibly-
-# non-saturated but still very wrong altura (~89% incident on 2026-04-17).
-HUGE_DISAGREEMENT_THRESHOLD = 40.0
+# coherent (reports both altura AND banda) and CV disagrees by >= 25%,
+# prefer Claude. Catches two failure modes observed on 2026-04-17:
+#   - CV latches onto a wrong band (tablecloth stripe) → altura ~89%
+#   - CV scans up through bubbly foam layer during peak fermentation and
+#     can't find a dough→glass transition → altura 80-88% while real
+#     solid-dough surface per Claude is ~57%.
+# Threshold lowered from 40 to 25 after the 2026-04-17 12:00 foam incident.
+HUGE_DISAGREEMENT_THRESHOLD = 25.0
 
 
 def compute_measurement(
