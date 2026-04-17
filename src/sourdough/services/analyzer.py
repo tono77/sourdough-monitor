@@ -56,6 +56,7 @@ Responde SOLO con JSON válido:
   "burbujas": "<ninguna|pocas|muchas>",
   "textura": "<lisa|rugosa|muy_activa>",
   "notas": "<observación breve en español, máx 80 chars>",
+  "opinion_panadero": "<Como panadero experto en masa madre, da tu opinión cualitativa: actividad, estructura, momento óptimo, recomendaciones. 1-2 frases en español.>",
   "confianza": <1-5>
 }}
 Si no puedes ver el frasco claramente, usa altura_pct: null."""

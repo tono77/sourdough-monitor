@@ -79,6 +79,7 @@ def compute_measurement(
         claude_result.get("textura", ""),
         claude_result.get("notas", ""),
         is_new_cycle=is_new_cycle,
+        opinion_panadero=claude_result.get("opinion_panadero", ""),
     )
 
     # --- Build merged result ---
@@ -116,6 +117,7 @@ def _generate_notas(
     textura: str,
     claude_notas: str,
     is_new_cycle: bool = False,
+    opinion_panadero: str = "",
 ) -> str:
     """Generate description consistent with the fused measurement values.
 
@@ -172,7 +174,10 @@ def _generate_notas(
     elif crecimiento is not None and is_new_cycle and crecimiento > 0:
         parts.append("comenzando a crecer")
 
-    return ", ".join(parts)
+    result = ", ".join(parts)
+    if opinion_panadero:
+        result += f". 🧑‍🍳 {opinion_panadero}"
+    return result
 
 
 def _extract_claude_altura(result: dict) -> float | None:
