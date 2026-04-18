@@ -200,15 +200,7 @@
     <div id="lightbox" class="lightbox">
         <button class="lb-btn close-lb" onclick="closeLightbox()">✕</button>
         <div style="position:relative; display:inline-block; max-height:90vh; max-width:90vw;">
-            <img id="lightboxImg" src="" alt="Photo" style="max-height:90vh; max-width:90vw; object-fit:contain; cursor:crosshair;" onclick="handleLightboxClick(event)">
-            <div id="calibOverlay" class="calib-overlay">
-                <div id="calibLineBase" class="calib-line" style="border-top-color: #4caf50;"></div>
-                <div id="calibLineFondo" class="calib-line"></div>
-                <div id="calibLineTope" class="calib-line" style="border-top-color: #e94560;"></div>
-                <div id="calibLineIzq" class="calib-line-v"></div>
-                <div id="calibLineDer" class="calib-line-v"></div>
-            </div>
-            <div id="calibInstruction" class="calib-instruction">Haz clic en la BANDA ROJA (Fondo 0%)</div>
+            <img id="lightboxImg" src="" alt="Photo" style="max-height:90vh; max-width:90vw; object-fit:contain;">
         </div>
         <div class="lightbox-controls">
             <button class="lb-btn" onclick="lightboxNav(-1)">&#8249;</button>
@@ -253,6 +245,30 @@
                 <div class="md-actions">
                     <button id="mdDeleteBtn" class="md-delete" onclick="deleteMeasurement()">Eliminar medicion</button>
                     <button id="mdSaveBtn" class="md-save" onclick="saveMeasurementDetail()">Guardar correccion</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calibration Modal -->
+    <div id="calibModal" class="calib-modal" style="display:none;">
+        <div class="calib-modal-content">
+            <div class="calib-modal-header">
+                <h3>📐 Calibración del frasco</h3>
+                <button id="calibCloseBtn" class="lb-btn" title="Cerrar">✕</button>
+            </div>
+            <div class="calib-modal-body">
+                <canvas id="calibCanvas" width="800" height="600"></canvas>
+            </div>
+            <div class="calib-modal-panel">
+                <div class="calib-help">
+                    Alinea el <strong style="color:#ef4444">marco rojo</strong> con el frasco. Puedes arrastrar las líneas rojas, o arrastrar la imagen con pan/zoom (rueda del mouse).<br><br>
+                    Arrastra la línea <strong style="color:#ff9800">naranja</strong> al elástico rojo del frasco.<br><br>
+                    <kbd>Enter</kbd> guardar · <kbd>Esc</kbd> cancelar · <kbd>r</kbd> reset · <kbd>0</kbd> reset zoom
+                </div>
+                <div class="calib-modal-actions">
+                    <button id="calibSaveBtn" class="btn-calib" style="background:#4caf50;">Guardar calibración</button>
+                    <button id="calibCancelBtn" class="btn-calib" style="background:#555;">Cancelar</button>
                 </div>
             </div>
         </div>

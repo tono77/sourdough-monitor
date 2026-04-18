@@ -29,7 +29,7 @@ import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/fireb
 import { initCharts, updateCharts, setOnPointClick } from './charts.js';
 import { initMeasurementDetail, openMeasurementDetail, closeMeasurementDetail, saveMeasurementDetail, deleteMeasurement } from './measurement-detail.js';
 import { openLightbox, openLightboxAt, openLightboxSrc, lightboxNav, closeLightbox, updateLatestPhoto, updateGallery, setupLightboxKeyboard } from './gallery.js';
-import { initCalibration, startCalibration, handleLightboxClick, getIsCalibrating } from './calibration.js';
+import { initCalibration, startCalibration, getIsCalibrating } from './calibration.js';
 import { buildGrowthData, startTimer, clearTimer, promptEditCrecimiento, promptNewCycle } from './utils.js';
 
 // ─── Firebase config ───
@@ -72,8 +72,8 @@ let messaging = null;
 // ─── Initialize calibration module with Firebase refs ───
 initCalibration(
     db, doc, updateDoc,
-    () => measurementsUnsubscribe,
-    () => currentSessionId
+    () => currentSessionId,
+    () => allMeasurements,
 );
 
 // ─── Expose gallery/calibration functions to window (for onclick in HTML) ───
@@ -83,14 +83,13 @@ window.openLightboxSrc = openLightboxSrc;
 window.lightboxNav = lightboxNav;
 window.closeLightbox = closeLightbox;
 window.startCalibration = startCalibration;
-window.handleLightboxClick = handleLightboxClick;
 window.closeMeasurementDetail = closeMeasurementDetail;
 window.saveMeasurementDetail = saveMeasurementDetail;
 window.deleteMeasurement = deleteMeasurement;
 
 // ─── Expose utility functions to window ───
 window.promptEditCrecimiento = () => promptEditCrecimiento(db, doc, updateDoc, currentSessionId, allMeasurements);
-window.promptNewCycle = () => promptNewCycle(db, collection, addDoc, currentSessionId);
+window.promptNewCycle = () => promptNewCycle(db, collection, addDoc, currentSessionId, () => startCalibration());
 
 // ─── Setup keyboard navigation (pass calibrating state getter) ───
 setupLightboxKeyboard(getIsCalibrating);
