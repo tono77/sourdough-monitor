@@ -11,12 +11,12 @@ export function medianSmooth(values, window = 5) {
     });
 }
 
-// Build growth data for display with Multi-Cycle support.
-// v2: uses crecimiento_pct (pre-calculated by backend) when available,
-// falls back to nivel_pct with median smoothing for legacy data.
+// Build level data for display with Multi-Cycle support.
+// v2: uses altura_pct (absolute jar level 0-100%) when available,
+// falls back to nivel_pct (legacy growth %) with median smoothing.
 export function buildGrowthData(measurements) {
     const validMeds = measurements.filter(m =>
-        m.crecimiento_pct != null || m.nivel_pct != null || m.is_ciclo === true
+        m.altura_pct != null || m.crecimiento_pct != null || m.nivel_pct != null || m.is_ciclo === true
     );
     if (validMeds.length === 0) return null;
 
@@ -38,13 +38,13 @@ export function buildGrowthData(measurements) {
 
     // 2. Process each chunk
     chunks.forEach(chunk => {
-        // Prefer crecimiento_pct (v2 field, pre-computed growth)
-        const hasV2 = chunk.some(m => m.crecimiento_pct != null);
+        // Prefer altura_pct (v2 field, absolute jar level)
+        const hasV2 = chunk.some(m => m.altura_pct != null);
 
         if (hasV2) {
-            // v2 path: use backend-calculated growth directly
+            // v2 path: use absolute jar level directly
             chunk.forEach(m => {
-                const val = m.crecimiento_pct != null ? parseFloat(m.crecimiento_pct) : 0;
+                const val = m.altura_pct != null ? parseFloat(m.altura_pct) : 0;
                 growthArr.push(val);
                 outputMeds.push(m);
             });
@@ -110,8 +110,8 @@ export async function promptEditCrecimiento(db, doc, updateDoc, currentSessionId
 
     const realId = latestValid._id || latestValid.timestamp.replace(":", "-").replace(".", "-");
 
-    const currentVal = prompt(`Corrige el % medido por la IA para la ultima foto (${new Date(latestValid.timestamp).toLocaleTimeString()}):`,
-                              latestValid.nivel_pct || "");
+    const currentVal = prompt(`Corrige la posicion de la masa en el frasco (0-100%) para la ultima foto (${new Date(latestValid.timestamp).toLocaleTimeString()}):\n\n0% = fondo del frasco\n100% = tapa del frasco`,
+                              latestValid.altura_pct || latestValid.nivel_pct || "");
     if (currentVal !== null && currentVal.trim() !== "") {
         const newVal = parseFloat(currentVal);
         if (!isNaN(newVal)) {
@@ -119,6 +119,7 @@ export async function promptEditCrecimiento(db, doc, updateDoc, currentSessionId
                 const mRef = doc(db, "sesiones", currentSessionId, "mediciones", realId);
                 await updateDoc(mRef, {
                     nivel_pct: newVal,
+                    altura_pct_corrected: newVal,
                     is_manual_override: true,
                     notas: "Medicion corregida manualmente"
                 });

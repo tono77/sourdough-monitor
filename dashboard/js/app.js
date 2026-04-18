@@ -68,6 +68,7 @@ let allMeasurements = [];
 let appConfigUnsubscribe = null;
 let isHibernating = false;
 let messaging = null;
+let rerenderDashboard = null; // set by selectSession so loadAppConfig can re-render on wake
 
 // ─── Initialize calibration module with Firebase refs ───
 initCalibration(
@@ -205,10 +206,14 @@ function loadAppConfig() {
             isHibernating = false;
             btn.innerHTML = '❄️ Refrigerar';
 
-            // Restore original class (we just assume it's loading/active to let
-            // loadSessionDetails reset it to active or inactive based on latest measurement)
-            badge.className = 'status-badge inactive';
-            badgeText.textContent = 'Cargando...';
+            // Re-render with current session data so the badge reflects the real
+            // state (Monitoreando / Completada) instead of staying as "Cargando..."
+            if (rerenderDashboard) {
+                rerenderDashboard();
+            } else {
+                badge.className = 'status-badge inactive';
+                badgeText.textContent = 'Cargando...';
+            }
         }
     });
 }
@@ -282,6 +287,7 @@ function selectSession(sessionId) {
     const render = () => {
         if (localSession) updateDashboard(localSession, localMeasurements);
     };
+    rerenderDashboard = render;
 
     // 1. Subscribe to measurements subcollection
     const medsRef = collection(db, 'sesiones', sessionId, 'mediciones');
@@ -366,23 +372,49 @@ function updateDashboard(session, measurements) {
     const currentGrowth = latestValidIdx >= 0 ? gd.growthArr[latestValidIdx] : null;
     const prevGrowth    = latestValidIdx >= 1 ? gd.growthArr[latestValidIdx - 1] : null;
 
-    // Level metric
+    // Level metric — prefer volumen_ml (absolute, from jar's printed scale)
+    // and fall back to altura_pct when the ml scale isn't detected.
     if (latest) {
-        document.getElementById('levelValue').textContent =
-            currentGrowth != null ? (currentGrowth >= 0 ? `+${currentGrowth.toFixed(0)}%` : `${currentGrowth.toFixed(0)}%`) : '--';
+        const prevMed = gd && latestValidIdx >= 1 ? gd.validMeds[latestValidIdx - 1] : null;
+        const hasMl = latest.volumen_ml != null;
 
-        if (prevGrowth != null && currentGrowth != null) {
-            const diff = currentGrowth - prevGrowth;
-            let arrow = '→';
-            let color = '#888';
-            if (diff > 0) { arrow = '↑'; color = '#4caf50'; }
-            else if (diff < 0) { arrow = '↓'; color = '#e94560'; }
+        if (hasMl) {
+            const currentMl = parseFloat(latest.volumen_ml);
+            const prevMl = prevMed && prevMed.volumen_ml != null ? parseFloat(prevMed.volumen_ml) : null;
 
-            const sign = diff > 0 ? '+' : '';
-            const sub = document.getElementById('levelSub');
-            sub.textContent = `${arrow} ${sign}${diff.toFixed(1)}%`;
-            sub.style.color = color;
-            document.getElementById('levelVsAnterior').textContent = 'vs medicion anterior';
+            document.getElementById('levelValue').textContent = `${currentMl.toFixed(0)}ml`;
+
+            if (prevMl != null) {
+                const diffMl = currentMl - prevMl;
+                let arrow = '→', color = '#888';
+                if (diffMl > 2) { arrow = '↑'; color = '#4caf50'; }
+                else if (diffMl < -2) { arrow = '↓'; color = '#e94560'; }
+                const sign = diffMl > 0 ? '+' : '';
+                const sub = document.getElementById('levelSub');
+                sub.textContent = `${arrow} ${sign}${diffMl.toFixed(0)}ml`;
+                sub.style.color = color;
+                document.getElementById('levelVsAnterior').textContent = 'vs medicion anterior';
+            }
+        } else {
+            const currentLevel = latest.altura_pct != null ? parseFloat(latest.altura_pct) : null;
+            const prevLevel = prevMed && prevMed.altura_pct != null ? parseFloat(prevMed.altura_pct) : null;
+
+            document.getElementById('levelValue').textContent =
+                currentLevel != null ? `${currentLevel.toFixed(0)}%` : '--';
+
+            if (prevLevel != null && currentLevel != null) {
+                const diff = currentLevel - prevLevel;
+                let arrow = '→';
+                let color = '#888';
+                if (diff > 0.5) { arrow = '↑'; color = '#4caf50'; }
+                else if (diff < -0.5) { arrow = '↓'; color = '#e94560'; }
+
+                const sign = diff > 0 ? '+' : '';
+                const sub = document.getElementById('levelSub');
+                sub.textContent = `${arrow} ${sign}${diff.toFixed(1)}%`;
+                sub.style.color = color;
+                document.getElementById('levelVsAnterior').textContent = 'vs medicion anterior';
+            }
         }
 
         const bub = bubbleDisplay[latest.burbujas] || { emoji: '--', text: '--' };

@@ -8,7 +8,8 @@
     <key>ProgramArguments</key>
     <array>
         <string>/Users/moltbot/Projects/sourdough-monitor/venv/bin/python3</string>
-        <string>/Users/moltbot/Projects/sourdough-monitor/monitor.py</string>
+        <string>-m</string>
+        <string>sourdough</string>
     </array>
 
     <key>WorkingDirectory</key>

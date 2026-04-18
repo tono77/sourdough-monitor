@@ -103,6 +103,9 @@ class FirebaseClient:
                 "altura_pct": measurement_data.get("altura_pct"),
                 "crecimiento_pct": measurement_data.get("crecimiento_pct"),
                 "fuente": measurement_data.get("fuente"),
+                "volumen_ml": measurement_data.get("volumen_ml"),
+                "crecimiento_ml": measurement_data.get("crecimiento_ml"),
+                "crecimiento_ml_pct": measurement_data.get("crecimiento_ml_pct"),
                 "foto_base64": foto_base64,
             }
 
@@ -157,6 +160,22 @@ class FirebaseClient:
             return sorted(corrections, key=lambda x: x.get("timestamp", ""))
         except Exception as e:
             log.warning("Firestore pull corrections error: %s", e)
+            return []
+
+    def pull_cycle_markers(self, session_id: int) -> list[dict]:
+        """Pull cycle markers (is_ciclo=true) from Firestore mediciones."""
+        if self._db is None:
+            return []
+        try:
+            meds_ref = (
+                self._db.collection("sesiones").document(str(session_id))
+                .collection("mediciones")
+            )
+            docs = meds_ref.where("is_ciclo", "==", True).get()
+            markers = [d.to_dict() for d in docs]
+            return sorted(markers, key=lambda x: x.get("timestamp", ""))
+        except Exception as e:
+            log.warning("Firestore pull cycle markers error: %s", e)
             return []
 
     def sync_bread_window(self, session_id: int, state: str, timestamp: str) -> bool:

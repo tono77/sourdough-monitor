@@ -22,9 +22,29 @@ from sourdough.services import capture as capture_svc
 from sourdough.services import charting, peak_detector, timelapse
 from sourdough.services.analyzer import analyze_photo, run_opencv
 from sourdough.services.measurement import compute_measurement
+from sourdough.services.scale_detector import detect_scale
 from sourdough.services.bread_window import check_bread_window
 
 log = logging.getLogger(__name__)
+
+
+def _utc_to_local_naive(ts: str) -> str:
+    """Convert a UTC ISO timestamp (with Z or +00:00) to a naive local-time string.
+
+    DB timestamps are naive local time, so cycle marker timestamps from
+    Firebase (UTC) must be converted before SQL comparison.
+    """
+    if not ts:
+        return ts
+    # Normalize "Z" suffix to "+00:00" for fromisoformat
+    normalized = ts.replace("Z", "+00:00")
+    try:
+        dt_utc = datetime.fromisoformat(normalized)
+        dt_local = dt_utc.astimezone(tz=None)  # system local timezone
+        return dt_local.replace(tzinfo=None).isoformat()
+    except (ValueError, TypeError):
+        log.warning("No se pudo convertir timestamp UTC a local: %s", ts)
+        return ts
 
 
 class Monitor:
@@ -81,12 +101,16 @@ class Monitor:
             session = sessions.get_or_create_today()
             log.info("Session #%d (%s)", session.id, session.fecha)
 
+            # Ensure session document exists in Firestore
+            if self._firebase:
+                self._firebase.sync_session(sessions.to_dict(session))
+
             # Run cycle
             self._run_cycle(conn, session, sessions, measurements)
 
             # Wait for next cycle
             log.info("Next capture in %ds (%d min)", interval, interval // 60)
-            self._sleep(interval)
+            self._sleep(interval, wake_on_hibernation=True)
 
         log.info("Monitor stopped")
         self._db.close()
@@ -122,21 +146,33 @@ class Monitor:
             if uploaded_photo:
                 log.info("Photo uploaded to Drive: %s", Path(photo_path).name)
 
-        # Pull calibration from Firebase
+        # Pull calibration and cycle markers from Firebase
+        latest_cycle_ts = None
         if self._firebase:
             self._sync_calibration(session, sessions)
             self._sync_corrections(session, measurements)
+            # Pull cycle markers to find the latest refresh/feed event
+            cycle_markers = self._firebase.pull_cycle_markers(session.id)
+            if cycle_markers:
+                latest_cycle_ts = cycle_markers[-1].get("timestamp")
+                # Firebase timestamps are UTC (ISO with Z suffix).
+                # DB timestamps are naive local time.  Convert to local
+                # so the SQL comparison in get_baseline_* works correctly.
+                latest_cycle_ts = _utc_to_local_naive(latest_cycle_ts)
+                log.info("Último ciclo detectado: %s", latest_cycle_ts)
 
         # Refresh session after potential calibration update
         session = sessions.get_by_id(session.id)
 
-        # Baseline
-        baseline_foto = measurements.get_baseline_foto(session.id)
+        # Baseline — use cycle-aware baseline if a cycle was marked
+        baseline_foto = measurements.get_baseline_foto(session.id, latest_cycle_ts)
 
         # Corrections file
         corrections_file = self.config.data_dir / "dataset_corrections.json"
 
         # Analyze: Claude Vision
+        calibration = session.calibration if session.is_calibrated else None
+
         log.info("Enviando foto a Claude Vision...")
         try:
             claude_result = analyze_photo(
@@ -144,12 +180,12 @@ class Monitor:
                 photo_path=photo_path,
                 baseline_foto_path=baseline_foto,
                 corrections_file=corrections_file if corrections_file.exists() else None,
+                calibration=calibration,
             )
             log.info("Claude: %s", json.dumps(claude_result, indent=2, ensure_ascii=False))
 
             # Analyze: OpenCV (independent)
             cv_altura = None
-            calibration = session.calibration if session.is_calibrated else None
             if calibration and calibration.is_complete:
                 try:
                     cv_altura = run_opencv(photo_path, calibration)
@@ -168,9 +204,31 @@ class Monitor:
                 except Exception as e:
                     log.warning("ML prediction error: %s", e)
 
+            # Detect ml scale for absolute volume calibration (optional enrichment)
+            scale = None
+            image_height = None
+            try:
+                scale = detect_scale(photo_path)
+                if scale is not None:
+                    import cv2
+                    _img = cv2.imread(photo_path)
+                    if _img is not None:
+                        image_height = _img.shape[0]
+            except Exception as e:
+                log.warning("Scale detection error: %s", e)
+
             # Fuse all measurements and calculate growth
-            baseline_altura = measurements.get_baseline_altura(session.id)
-            merged = compute_measurement(claude_result, cv_altura, baseline_altura, ml_altura)
+            baseline_altura = measurements.get_baseline_altura(session.id, latest_cycle_ts)
+            baseline_volumen_ml = measurements.get_baseline_volumen_ml(session.id, latest_cycle_ts)
+            is_new_cycle = latest_cycle_ts is not None and baseline_altura is None
+            merged = compute_measurement(
+                claude_result, cv_altura, baseline_altura, ml_altura,
+                is_new_cycle=is_new_cycle,
+                scale=scale,
+                calibration=calibration,
+                image_height=image_height,
+                baseline_volumen_ml=baseline_volumen_ml,
+            )
 
             # Save to DB
             measurement = measurements.save(session.id, photo_path, merged)
@@ -345,11 +403,25 @@ class Monitor:
             except Exception as e:
                 log.warning("ML predictor init failed: %s", e)
 
-    def _sleep(self, seconds: float) -> None:
-        """Sleep in small increments to allow graceful shutdown."""
+    def _sleep(self, seconds: float, wake_on_hibernation: bool = False) -> None:
+        """Sleep in small increments to allow graceful shutdown.
+
+        When wake_on_hibernation is True, break early if the dashboard
+        toggles hibernation on, so refrigerar takes effect within ~15s
+        instead of waiting for the full capture interval.
+        """
         end = time.time() + seconds
+        last_hib_check = time.time()
         while self._running and time.time() < end:
             time.sleep(2)
+            if wake_on_hibernation and self._firebase and time.time() - last_hib_check >= 15:
+                last_hib_check = time.time()
+                try:
+                    if self._firebase.get_hibernate_state():
+                        log.info("Refrigerar activado desde dashboard — interrumpiendo siesta")
+                        return
+                except Exception:
+                    pass
 
     def _signal_handler(self, signum, frame):
         log.info("Shutdown signal received, finishing current cycle...")

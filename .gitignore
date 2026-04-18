@@ -47,3 +47,9 @@ config.json
 dist/
 build/
 .pytest_cache/
+
+# ML artefacts (regenerable from manual_labels.json)
+data/ml_model.pth
+data/ml_dataset/crops/
+data/ml_dataset/labels.csv
+data/ml_dataset/evaluation_results.csv
