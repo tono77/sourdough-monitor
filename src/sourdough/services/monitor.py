@@ -110,7 +110,7 @@ class Monitor:
 
             # Wait for next cycle
             log.info("Next capture in %ds (%d min)", interval, interval // 60)
-            self._sleep(interval)
+            self._sleep(interval, wake_on_hibernation=True)
 
         log.info("Monitor stopped")
         self._db.close()
@@ -403,11 +403,25 @@ class Monitor:
             except Exception as e:
                 log.warning("ML predictor init failed: %s", e)
 
-    def _sleep(self, seconds: float) -> None:
-        """Sleep in small increments to allow graceful shutdown."""
+    def _sleep(self, seconds: float, wake_on_hibernation: bool = False) -> None:
+        """Sleep in small increments to allow graceful shutdown.
+
+        When wake_on_hibernation is True, break early if the dashboard
+        toggles hibernation on, so refrigerar takes effect within ~15s
+        instead of waiting for the full capture interval.
+        """
         end = time.time() + seconds
+        last_hib_check = time.time()
         while self._running and time.time() < end:
             time.sleep(2)
+            if wake_on_hibernation and self._firebase and time.time() - last_hib_check >= 15:
+                last_hib_check = time.time()
+                try:
+                    if self._firebase.get_hibernate_state():
+                        log.info("Refrigerar activado desde dashboard — interrumpiendo siesta")
+                        return
+                except Exception:
+                    pass
 
     def _signal_handler(self, signum, frame):
         log.info("Shutdown signal received, finishing current cycle...")
