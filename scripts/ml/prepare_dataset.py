@@ -1,187 +1,127 @@
 #!/usr/bin/env python3
-"""Prepare ML training dataset from existing photos + DB labels.
+"""Build the ML training dataset from the manual labeling round.
 
-Extracts calibrated crops from photos, pairs them with altura labels,
-and saves to data/ml_dataset/ with a labels.csv for training.
+Reads data/ml_dataset/manual_labels.json (produced by scripts/labeling/server.py)
+and for each entry:
+  - opens the referenced photo
+  - crops to the per-photo jar rectangle [izq_x_pct, tope_y_pct, der_x_pct, base_y_pct]
+  - saves the crop to data/ml_dataset/crops/
+  - writes an entry to labels.csv with altura_pct as the regression target
+
+Per-photo crops let the model see a normalized jar view regardless of camera
+drift between sessions, which was the whole point of the manual relabeling.
 
 Usage:
     python scripts/ml/prepare_dataset.py
 """
 
 import csv
+import json
 import os
-import sqlite3
 import sys
 from pathlib import Path
 
-try:
-    from PIL import Image
-except ImportError:
-    sys.exit("Install Pillow: pip install Pillow")
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-DB_PATH = BASE_DIR / "data" / "fermento.db"
-OUTPUT_DIR = BASE_DIR / "data" / "ml_dataset"
-
-# Default crop boundaries for uncalibrated sessions (center 60% of image)
-DEFAULT_CROP = {
-    "izq_x_pct": 25.0,
-    "der_x_pct": 75.0,
-    "tope_y_pct": 20.0,
-    "base_y_pct": 85.0,
-}
-
-
-def get_calibration(conn, session_id):
-    """Get calibration bounds for a session, falling back to defaults."""
-    row = conn.execute(
-        "SELECT izq_x_pct, der_x_pct, tope_y_pct, base_y_pct, fondo_y_pct, is_calibrated "
-        "FROM sesiones WHERE id = ?",
-        (session_id,),
-    ).fetchone()
-
-    if row and row[5] == 1 and row[0] is not None and row[1] is not None:
-        return {
-            "izq_x_pct": row[0],
-            "der_x_pct": row[1],
-            "tope_y_pct": row[2],
-            "base_y_pct": row[3],
-            "fondo_y_pct": row[4],
-            "calibrated": True,
-        }
-    return {**DEFAULT_CROP, "fondo_y_pct": None, "calibrated": False}
-
-
-def crop_jar(img, calib):
-    """Crop the jar region from a photo using calibration bounds."""
-    w, h = img.size
-    left = int(w * calib["izq_x_pct"] / 100)
-    right = int(w * calib["der_x_pct"] / 100)
-    top = int(h * calib["tope_y_pct"] / 100)
-    bottom = int(h * calib["base_y_pct"] / 100)
-    return img.crop((left, top, right, bottom))
-
-
-def compute_label(row, calib):
-    """Determine the best available label for this measurement.
-
-    Priority:
-    1. altura_pct (v2 fused, most reliable) — not yet populated
-    2. altura_y_pct (OpenCV or Claude single mode absolute position)
-    3. Estimate from nivel_pct if calibration available
-
-    Returns altura_pct (0-100 of jar) or None.
-    """
-    # v2 fused position
-    if row["altura_pct"] is not None:
-        return float(row["altura_pct"])
-
-    # OpenCV/Claude absolute position
-    if row["altura_y_pct"] is not None:
-        return float(row["altura_y_pct"])
-
-    # Skip measurements without usable labels
-    return None
+def find_repo_root(start: Path) -> Path:
+    p = start.resolve()
+    for _ in range(10):
+        if (p / "data" / "fermento.db").exists():
+            return p
+        if p.parent == p:
+            break
+        p = p.parent
+    sys.exit("Could not locate data/fermento.db walking up from the script.")
 
 
 def main():
-    if not DB_PATH.exists():
-        sys.exit(f"Database not found: {DB_PATH}")
+    try:
+        from PIL import Image
+    except ImportError:
+        sys.exit("Install Pillow: pip install Pillow")
 
-    conn = sqlite3.connect(str(DB_PATH))
-    conn.row_factory = sqlite3.Row
+    root = find_repo_root(Path(__file__).parent)
+    labels_json = root / "data" / "ml_dataset" / "manual_labels.json"
+    crops_dir = root / "data" / "ml_dataset" / "crops"
+    labels_csv = root / "data" / "ml_dataset" / "labels.csv"
 
-    # Fetch all measurements with photos
-    rows = conn.execute("""
-        SELECT m.id, m.sesion_id, m.foto_path, m.nivel_pct,
-               m.altura_y_pct, m.altura_pct, m.burbujas, m.textura,
-               m.timestamp, m.confianza
-        FROM mediciones m
-        WHERE m.foto_path IS NOT NULL
-        ORDER BY m.id ASC
-    """).fetchall()
+    if not labels_json.exists():
+        sys.exit(f"Manual labels not found: {labels_json}\n"
+                 "Run the labeling UI first: scripts/labeling/server.py")
 
-    print(f"Total measurements with photos: {len(rows)}")
+    with open(labels_json) as f:
+        entries = json.load(f)
 
-    # Prepare output directory
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    crops_dir = OUTPUT_DIR / "crops"
-    crops_dir.mkdir(exist_ok=True)
+    print(f"Manual labels loaded: {len(entries)}")
 
-    # Cache calibration per session
-    calib_cache = {}
+    crops_dir.mkdir(parents=True, exist_ok=True)
+
     samples = []
-    skipped_no_label = 0
-    skipped_no_photo = 0
+    skipped_missing = 0
+    skipped_bounds = 0
 
-    for row in rows:
-        row = dict(row)
-        foto_path = row["foto_path"]
-
-        # Check photo exists
-        if not os.path.exists(foto_path):
-            skipped_no_photo += 1
+    for e in entries:
+        foto_path = e.get("foto_path")
+        if not foto_path or not os.path.exists(foto_path):
+            skipped_missing += 1
             continue
 
-        # Get label
-        session_id = row["sesion_id"]
-        if session_id not in calib_cache:
-            calib_cache[session_id] = get_calibration(conn, session_id)
-        calib = calib_cache[session_id]
+        tope = e["tope_y_pct"]
+        base = e["base_y_pct"]
+        izq  = e["izq_x_pct"]
+        der  = e["der_x_pct"]
 
-        label = compute_label(row, calib)
-        if label is None:
-            skipped_no_label += 1
+        if base <= tope or der <= izq:
+            skipped_bounds += 1
             continue
 
-        # Crop and save
         try:
-            img = Image.open(foto_path)
-            cropped = crop_jar(img, calib)
-            crop_filename = f"s{session_id}_{Path(foto_path).stem}.jpg"
-            crop_path = crops_dir / crop_filename
-            cropped.save(crop_path, "JPEG", quality=90)
+            img = Image.open(foto_path).convert("RGB")
+            w, h = img.size
+            left   = int(w * izq  / 100)
+            right  = int(w * der  / 100)
+            top    = int(h * tope / 100)
+            bottom = int(h * base / 100)
+            crop = img.crop((left, top, right, bottom))
+
+            crop_name = f"s{e['session_id']}_m{e['id']}.jpg"
+            crop.save(crops_dir / crop_name, "JPEG", quality=90)
 
             samples.append({
-                "filename": crop_filename,
-                "altura_pct": round(label, 2),
-                "session_id": session_id,
-                "calibrated": calib["calibrated"],
-                "burbujas": row["burbujas"] or "",
-                "textura": row["textura"] or "",
-                "timestamp": row["timestamp"] or "",
+                "filename": crop_name,
+                "altura_pct": round(float(e["altura_pct"]), 2),
+                "session_id": e["session_id"],
+                "measurement_id": e["id"],
+                "timestamp": e.get("timestamp", ""),
+                "cv_altura_pct": round(float(e.get("cv_altura_pct", 0)), 2),
             })
-        except Exception as e:
-            print(f"  Error processing {foto_path}: {e}")
+        except Exception as err:
+            print(f"  Error with {foto_path}: {err}")
 
-    conn.close()
-
-    # Write labels CSV
-    labels_path = OUTPUT_DIR / "labels.csv"
-    with open(labels_path, "w", newline="") as f:
+    with open(labels_csv, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=[
-            "filename", "altura_pct", "session_id", "calibrated",
-            "burbujas", "textura", "timestamp",
+            "filename", "altura_pct", "session_id", "measurement_id",
+            "timestamp", "cv_altura_pct",
         ])
         writer.writeheader()
         writer.writerows(samples)
 
-    print(f"\nDataset prepared:")
-    print(f"  Samples: {len(samples)}")
-    print(f"  Skipped (no label): {skipped_no_label}")
-    print(f"  Skipped (no photo): {skipped_no_photo}")
-    print(f"  Crops: {crops_dir}")
-    print(f"  Labels: {labels_path}")
+    print(f"\nDataset ready:")
+    print(f"  Crops:              {len(samples)}")
+    print(f"  Skipped (no photo): {skipped_missing}")
+    print(f"  Skipped (bad box):  {skipped_bounds}")
+    print(f"  Crops dir:          {crops_dir}")
+    print(f"  Labels CSV:         {labels_csv}")
 
-    # Show distribution
     if samples:
         labels = [s["altura_pct"] for s in samples]
         print(f"\nLabel distribution:")
-        print(f"  Min: {min(labels):.1f}%")
-        print(f"  Max: {max(labels):.1f}%")
-        print(f"  Mean: {sum(labels)/len(labels):.1f}%")
-        calibrated_count = sum(1 for s in samples if s["calibrated"])
-        print(f"  Calibrated: {calibrated_count}/{len(samples)} ({calibrated_count/len(samples)*100:.0f}%)")
+        print(f"  Min / Max / Mean:  {min(labels):.1f}% / {max(labels):.1f}% / {sum(labels)/len(labels):.1f}%")
+        buckets = [0] * 10
+        for a in labels:
+            buckets[min(int(a // 10), 9)] += 1
+        for i, n in enumerate(buckets):
+            bar = "#" * n
+            print(f"  {i*10:3d}-{(i+1)*10:3d}%: {n:>3}  {bar}")
 
 
 if __name__ == "__main__":

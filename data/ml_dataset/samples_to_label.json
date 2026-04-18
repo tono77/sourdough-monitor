@@ -1,0 +1,2676 @@
+[
+  {
+    "id": 729,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_12-35-07.jpg",
+    "timestamp": "2026-04-13T12:35:16.681211",
+    "cv_altura_pct": 61.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 834,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_06-40-30.jpg",
+    "timestamp": "2026-04-15T06:40:48.803080",
+    "cv_altura_pct": 74.8,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1018,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_12-35-52.jpg",
+    "timestamp": "2026-04-16T12:36:01.779798",
+    "cv_altura_pct": 93.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 793,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_23-38-54.jpg",
+    "timestamp": "2026-04-13T23:39:03.891980",
+    "cv_altura_pct": 38.3,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 796,
+    "session_id": 12,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-14_00-10-03.jpg",
+    "timestamp": "2026-04-14T00:10:14.335857",
+    "cv_altura_pct": 36.6,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1174,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_01-51-55.jpg",
+    "timestamp": "2026-04-17T01:52:06.662777",
+    "cv_altura_pct": 30.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 859,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_10-45-59.jpg",
+    "timestamp": "2026-04-15T10:46:08.470990",
+    "cv_altura_pct": 63.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1260,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_16-35-24.jpg",
+    "timestamp": "2026-04-17T16:35:37.056332",
+    "cv_altura_pct": 92.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1280,
+    "session_id": 16,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-18_12-16-45.jpg",
+    "timestamp": "2026-04-18T12:16:56.346039",
+    "cv_altura_pct": 41.6,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1149,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_21-32-14.jpg",
+    "timestamp": "2026-04-16T21:32:27.797896",
+    "cv_altura_pct": 57.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 850,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_09-13-03.jpg",
+    "timestamp": "2026-04-15T09:13:12.775847",
+    "cv_altura_pct": 74.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1185,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_03-45-46.jpg",
+    "timestamp": "2026-04-17T03:45:56.372620",
+    "cv_altura_pct": 30.8,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 893,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_16-34-24.jpg",
+    "timestamp": "2026-04-15T16:34:36.033692",
+    "cv_altura_pct": 29.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1234,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_12-11-37.jpg",
+    "timestamp": "2026-04-17T12:11:48.923436",
+    "cv_altura_pct": 57.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1155,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_22-34-55.jpg",
+    "timestamp": "2026-04-16T22:35:07.238795",
+    "cv_altura_pct": 37.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1254,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_15-33-42.jpg",
+    "timestamp": "2026-04-17T15:33:53.893026",
+    "cv_altura_pct": 95.1,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 851,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_09-23-21.jpg",
+    "timestamp": "2026-04-15T09:23:32.249871",
+    "cv_altura_pct": 74.4,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1183,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_03-25-04.jpg",
+    "timestamp": "2026-04-17T03:25:16.337478",
+    "cv_altura_pct": 30.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1266,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_17-37-40.jpg",
+    "timestamp": "2026-04-17T17:37:51.644421",
+    "cv_altura_pct": 62.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1010,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_11-13-04.jpg",
+    "timestamp": "2026-04-16T11:13:14.675595",
+    "cv_altura_pct": 95.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 776,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_20-42-07.jpg",
+    "timestamp": "2026-04-13T20:42:17.386621",
+    "cv_altura_pct": 65.1,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1206,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_07-21-19.jpg",
+    "timestamp": "2026-04-17T07:21:30.924946",
+    "cv_altura_pct": 42.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 903,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_18-17-52.jpg",
+    "timestamp": "2026-04-15T18:18:01.876046",
+    "cv_altura_pct": 16.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1146,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_21-00-59.jpg",
+    "timestamp": "2026-04-16T21:01:10.319421",
+    "cv_altura_pct": 78.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1104,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_13-46-56.jpg",
+    "timestamp": "2026-04-16T13:46:56.000000",
+    "cv_altura_pct": 100.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 901,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_17-57-10.jpg",
+    "timestamp": "2026-04-15T17:57:21.220598",
+    "cv_altura_pct": 14.7,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 742,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_14-49-39.jpg",
+    "timestamp": "2026-04-13T14:49:50.327152",
+    "cv_altura_pct": 54.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 934,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_22-11-29.jpg",
+    "timestamp": "2026-04-15T22:11:41.942716",
+    "cv_altura_pct": 79.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 752,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_16-33-18.jpg",
+    "timestamp": "2026-04-13T16:33:27.635695",
+    "cv_altura_pct": 57.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 838,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_07-21-52.jpg",
+    "timestamp": "2026-04-15T07:22:02.590075",
+    "cv_altura_pct": 74.7,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1007,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_10-42-05.jpg",
+    "timestamp": "2026-04-16T10:42:14.342747",
+    "cv_altura_pct": 87.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1189,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_04-27-08.jpg",
+    "timestamp": "2026-04-17T04:27:19.807696",
+    "cv_altura_pct": 30.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 891,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_16-16-53.jpg",
+    "timestamp": "2026-04-15T16:17:02.596927",
+    "cv_altura_pct": 56.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 844,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_08-18-13.jpg",
+    "timestamp": "2026-04-15T08:18:23.028315",
+    "cv_altura_pct": 74.7,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 797,
+    "session_id": 12,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-14_00-20-19.jpg",
+    "timestamp": "2026-04-14T00:20:29.982019",
+    "cv_altura_pct": 58.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1186,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_03-56-08.jpg",
+    "timestamp": "2026-04-17T03:56:18.721675",
+    "cv_altura_pct": 30.8,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 741,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_14-39-20.jpg",
+    "timestamp": "2026-04-13T14:39:30.652690",
+    "cv_altura_pct": 54.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 744,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_15-10-22.jpg",
+    "timestamp": "2026-04-13T15:10:37.444163",
+    "cv_altura_pct": 60.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 751,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_16-22-57.jpg",
+    "timestamp": "2026-04-13T16:23:08.050750",
+    "cv_altura_pct": 60.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 884,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_15-04-32.jpg",
+    "timestamp": "2026-04-15T15:04:41.671680",
+    "cv_altura_pct": 81.1,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 710,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_09-18-17.jpg",
+    "timestamp": "2026-04-13T09:18:29.060371",
+    "cv_altura_pct": 48.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 715,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_10-10-02.jpg",
+    "timestamp": "2026-04-13T10:10:12.524257",
+    "cv_altura_pct": 55.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 971,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_04-34-43.jpg",
+    "timestamp": "2026-04-16T04:34:57.061486",
+    "cv_altura_pct": 61.7,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1277,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_19-31-51.jpg",
+    "timestamp": "2026-04-17T19:32:01.634795",
+    "cv_altura_pct": 43.4,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1101,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_13-18-13.jpg",
+    "timestamp": "2026-04-16T13:18:13.000000",
+    "cv_altura_pct": 100.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 697,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_07-09-46.jpg",
+    "timestamp": "2026-04-13T07:10:01.597872",
+    "cv_altura_pct": 39.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1265,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_17-27-18.jpg",
+    "timestamp": "2026-04-17T17:27:28.619454",
+    "cv_altura_pct": 81.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1187,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_04-06-27.jpg",
+    "timestamp": "2026-04-17T04:06:38.351071",
+    "cv_altura_pct": 30.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 904,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_18-28-13.jpg",
+    "timestamp": "2026-04-15T18:28:25.641444",
+    "cv_altura_pct": 15.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 863,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_11-27-17.jpg",
+    "timestamp": "2026-04-15T11:27:27.352723",
+    "cv_altura_pct": 63.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 808,
+    "session_id": 12,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-14_02-14-03.jpg",
+    "timestamp": "2026-04-14T02:14:14.029705",
+    "cv_altura_pct": 58.1,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 978,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_05-47-13.jpg",
+    "timestamp": "2026-04-16T05:47:24.095170",
+    "cv_altura_pct": 62.4,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 882,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_14-43-50.jpg",
+    "timestamp": "2026-04-15T14:44:00.965541",
+    "cv_altura_pct": 51.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1216,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_09-04-50.jpg",
+    "timestamp": "2026-04-17T09:05:03.518985",
+    "cv_altura_pct": 42.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1196,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_05-39-37.jpg",
+    "timestamp": "2026-04-17T05:39:48.650870",
+    "cv_altura_pct": 30.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1006,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_10-31-45.jpg",
+    "timestamp": "2026-04-16T10:31:54.655637",
+    "cv_altura_pct": 87.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 989,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_07-36-03.jpg",
+    "timestamp": "2026-04-16T07:36:13.031683",
+    "cv_altura_pct": 45.7,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 848,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_08-52-24.jpg",
+    "timestamp": "2026-04-15T08:52:34.170951",
+    "cv_altura_pct": 74.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 842,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_07-57-31.jpg",
+    "timestamp": "2026-04-15T07:57:41.651907",
+    "cv_altura_pct": 74.8,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1169,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_01-00-15.jpg",
+    "timestamp": "2026-04-17T01:00:28.140697",
+    "cv_altura_pct": 30.8,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 899,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_17-36-30.jpg",
+    "timestamp": "2026-04-15T17:36:40.060496",
+    "cv_altura_pct": 14.6,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 757,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_17-25-05.jpg",
+    "timestamp": "2026-04-13T17:25:15.079978",
+    "cv_altura_pct": 53.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 907,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_18-59-20.jpg",
+    "timestamp": "2026-04-15T18:59:29.717253",
+    "cv_altura_pct": 51.7,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 913,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_19-42-43.jpg",
+    "timestamp": "2026-04-15T19:42:52.566496",
+    "cv_altura_pct": 15.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1281,
+    "session_id": 16,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-18_12-27-01.jpg",
+    "timestamp": "2026-04-18T12:27:12.505097",
+    "cv_altura_pct": 42.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 914,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_19-53-04.jpg",
+    "timestamp": "2026-04-15T19:53:13.387138",
+    "cv_altura_pct": 29.6,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 926,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_21-03-12.jpg",
+    "timestamp": "2026-04-15T21:03:22.355732",
+    "cv_altura_pct": 46.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 812,
+    "session_id": 12,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-14_02-55-22.jpg",
+    "timestamp": "2026-04-14T02:55:32.574170",
+    "cv_altura_pct": 58.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 892,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_16-24-04.jpg",
+    "timestamp": "2026-04-15T16:24:13.447231",
+    "cv_altura_pct": 62.4,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1128,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_17-55-31.jpg",
+    "timestamp": "2026-04-16T17:55:31.000000",
+    "cv_altura_pct": 100.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1167,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_00-39-33.jpg",
+    "timestamp": "2026-04-17T00:39:45.691977",
+    "cv_altura_pct": 30.8,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 764,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_18-37-38.jpg",
+    "timestamp": "2026-04-13T18:37:48.277225",
+    "cv_altura_pct": 49.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 804,
+    "session_id": 12,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-14_01-32-39.jpg",
+    "timestamp": "2026-04-14T01:32:50.031867",
+    "cv_altura_pct": 58.4,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 763,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_18-27-17.jpg",
+    "timestamp": "2026-04-13T18:27:27.254254",
+    "cv_altura_pct": 54.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1270,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_18-19-12.jpg",
+    "timestamp": "2026-04-17T18:19:23.318878",
+    "cv_altura_pct": 71.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 791,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_23-18-09.jpg",
+    "timestamp": "2026-04-13T23:18:19.910804",
+    "cv_altura_pct": 38.3,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1236,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_12-26-34.jpg",
+    "timestamp": "2026-04-17T12:26:46.544780",
+    "cv_altura_pct": 62.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1166,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_00-29-12.jpg",
+    "timestamp": "2026-04-17T00:29:23.303942",
+    "cv_altura_pct": 28.8,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1264,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_17-16-55.jpg",
+    "timestamp": "2026-04-17T17:17:06.926951",
+    "cv_altura_pct": 57.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1249,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_14-41-36.jpg",
+    "timestamp": "2026-04-17T14:41:49.400701",
+    "cv_altura_pct": 78.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 959,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_02-30-31.jpg",
+    "timestamp": "2026-04-16T02:30:40.038748",
+    "cv_altura_pct": 62.6,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 792,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_23-28-31.jpg",
+    "timestamp": "2026-04-13T23:28:41.307186",
+    "cv_altura_pct": 38.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1143,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_20-29-42.jpg",
+    "timestamp": "2026-04-16T20:29:56.309027",
+    "cv_altura_pct": 84.4,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1112,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_15-09-10.jpg",
+    "timestamp": "2026-04-16T15:09:10.000000",
+    "cv_altura_pct": 100.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1190,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_04-37-30.jpg",
+    "timestamp": "2026-04-17T04:37:40.951691",
+    "cv_altura_pct": 30.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 905,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_18-38-36.jpg",
+    "timestamp": "2026-04-15T18:38:47.909515",
+    "cv_altura_pct": 6.3,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 917,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_20-13-28.jpg",
+    "timestamp": "2026-04-15T20:13:38.449333",
+    "cv_altura_pct": 94.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 908,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_19-09-41.jpg",
+    "timestamp": "2026-04-15T19:09:50.975940",
+    "cv_altura_pct": 53.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1262,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_16-56-12.jpg",
+    "timestamp": "2026-04-17T16:56:22.736572",
+    "cv_altura_pct": 62.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 855,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_10-04-38.jpg",
+    "timestamp": "2026-04-15T10:04:48.172059",
+    "cv_altura_pct": 74.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1193,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_05-08-33.jpg",
+    "timestamp": "2026-04-17T05:08:44.378560",
+    "cv_altura_pct": 30.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1207,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_07-31-40.jpg",
+    "timestamp": "2026-04-17T07:31:52.593932",
+    "cv_altura_pct": 41.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1144,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_20-40-11.jpg",
+    "timestamp": "2026-04-16T20:40:23.200751",
+    "cv_altura_pct": 83.1,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1204,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_07-00-32.jpg",
+    "timestamp": "2026-04-17T07:00:48.217545",
+    "cv_altura_pct": 41.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1008,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_10-52-24.jpg",
+    "timestamp": "2026-04-16T10:52:34.883666",
+    "cv_altura_pct": 95.1,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1005,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_10-21-24.jpg",
+    "timestamp": "2026-04-16T10:21:35.256810",
+    "cv_altura_pct": 86.3,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 902,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_18-07-32.jpg",
+    "timestamp": "2026-04-15T18:07:41.279549",
+    "cv_altura_pct": 14.6,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1002,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_09-50-23.jpg",
+    "timestamp": "2026-04-16T09:50:34.050420",
+    "cv_altura_pct": 83.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 921,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_20-27-42.jpg",
+    "timestamp": "2026-04-15T20:27:52.359694",
+    "cv_altura_pct": 42.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 981,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_06-18-16.jpg",
+    "timestamp": "2026-04-16T06:18:25.842829",
+    "cv_altura_pct": 78.4,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 911,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_19-40-44.jpg",
+    "timestamp": "2026-04-15T19:40:55.049809",
+    "cv_altura_pct": 16.6,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1237,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_12-36-57.jpg",
+    "timestamp": "2026-04-17T12:37:10.322215",
+    "cv_altura_pct": 62.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 995,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_08-38-00.jpg",
+    "timestamp": "2026-04-16T08:38:11.484750",
+    "cv_altura_pct": 45.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1114,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_15-29-57.jpg",
+    "timestamp": "2026-04-16T15:29:57.000000",
+    "cv_altura_pct": 100.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 983,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_06-38-56.jpg",
+    "timestamp": "2026-04-16T06:39:06.071163",
+    "cv_altura_pct": 10.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1106,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_14-06-52.jpg",
+    "timestamp": "2026-04-16T14:06:52.000000",
+    "cv_altura_pct": 100.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 703,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_08-05-48.jpg",
+    "timestamp": "2026-04-13T08:06:00.090906",
+    "cv_altura_pct": 49.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1192,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_04-58-12.jpg",
+    "timestamp": "2026-04-17T04:58:23.117917",
+    "cv_altura_pct": 30.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 894,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_16-44-47.jpg",
+    "timestamp": "2026-04-15T16:44:56.810026",
+    "cv_altura_pct": 29.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 846,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_08-31-39.jpg",
+    "timestamp": "2026-04-15T08:31:56.136673",
+    "cv_altura_pct": 74.7,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1003,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_10-00-44.jpg",
+    "timestamp": "2026-04-16T10:00:53.828001",
+    "cv_altura_pct": 85.8,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1000,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_09-29-43.jpg",
+    "timestamp": "2026-04-16T09:29:53.712857",
+    "cv_altura_pct": 84.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 990,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_07-46-22.jpg",
+    "timestamp": "2026-04-16T07:46:33.155914",
+    "cv_altura_pct": 43.7,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 958,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_02-20-11.jpg",
+    "timestamp": "2026-04-16T02:20:20.854421",
+    "cv_altura_pct": 62.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 933,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_22-01-02.jpg",
+    "timestamp": "2026-04-15T22:01:12.327564",
+    "cv_altura_pct": 75.8,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1165,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_00-18-54.jpg",
+    "timestamp": "2026-04-17T00:19:05.221330",
+    "cv_altura_pct": 30.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 932,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_21-50-35.jpg",
+    "timestamp": "2026-04-15T21:50:44.608165",
+    "cv_altura_pct": 77.4,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1016,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_12-15-09.jpg",
+    "timestamp": "2026-04-16T12:15:20.029954",
+    "cv_altura_pct": 93.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1100,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_13-09-22.jpg",
+    "timestamp": "2026-04-16T13:09:22.000000",
+    "cv_altura_pct": 100.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 787,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_22-36-29.jpg",
+    "timestamp": "2026-04-13T22:36:41.752696",
+    "cv_altura_pct": 37.6,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1227,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_10-58-58.jpg",
+    "timestamp": "2026-04-17T10:59:10.649714",
+    "cv_altura_pct": 52.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1129,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_18-05-53.jpg",
+    "timestamp": "2026-04-16T18:05:53.000000",
+    "cv_altura_pct": 100.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 897,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_17-15-50.jpg",
+    "timestamp": "2026-04-15T17:15:59.589446",
+    "cv_altura_pct": 10.7,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 896,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_17-05-28.jpg",
+    "timestamp": "2026-04-15T17:05:37.829265",
+    "cv_altura_pct": 11.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 718,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_10-41-08.jpg",
+    "timestamp": "2026-04-13T10:41:18.986642",
+    "cv_altura_pct": 58.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 877,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_13-52-06.jpg",
+    "timestamp": "2026-04-15T13:52:16.666662",
+    "cv_altura_pct": 56.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1004,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_10-11-04.jpg",
+    "timestamp": "2026-04-16T10:11:13.964382",
+    "cv_altura_pct": 85.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 943,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_23-45-13.jpg",
+    "timestamp": "2026-04-15T23:45:22.326342",
+    "cv_altura_pct": 17.8,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 774,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_20-21-23.jpg",
+    "timestamp": "2026-04-13T20:21:34.380511",
+    "cv_altura_pct": 69.4,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 743,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_14-59-59.jpg",
+    "timestamp": "2026-04-13T15:00:10.304662",
+    "cv_altura_pct": 61.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1130,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_18-16-15.jpg",
+    "timestamp": "2026-04-16T18:16:15.000000",
+    "cv_altura_pct": 100.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 823,
+    "session_id": 12,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-14_04-49-10.jpg",
+    "timestamp": "2026-04-14T04:49:19.537288",
+    "cv_altura_pct": 59.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 936,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_22-32-19.jpg",
+    "timestamp": "2026-04-15T22:32:30.988947",
+    "cv_altura_pct": 67.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 835,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_06-50-53.jpg",
+    "timestamp": "2026-04-15T06:51:03.647846",
+    "cv_altura_pct": 74.8,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 895,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_16-55-07.jpg",
+    "timestamp": "2026-04-15T16:55:17.068489",
+    "cv_altura_pct": 29.8,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1191,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_04-47-50.jpg",
+    "timestamp": "2026-04-17T04:48:02.066417",
+    "cv_altura_pct": 30.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 944,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_23-55-35.jpg",
+    "timestamp": "2026-04-15T23:55:44.722550",
+    "cv_altura_pct": 66.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 847,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_08-42-04.jpg",
+    "timestamp": "2026-04-15T08:42:14.524681",
+    "cv_altura_pct": 74.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 888,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_15-45-50.jpg",
+    "timestamp": "2026-04-15T15:46:00.102055",
+    "cv_altura_pct": 44.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 919,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_20-23-49.jpg",
+    "timestamp": "2026-04-15T20:24:00.336478",
+    "cv_altura_pct": 94.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 795,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_23-59-42.jpg",
+    "timestamp": "2026-04-13T23:59:52.878314",
+    "cv_altura_pct": 36.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1013,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_11-44-06.jpg",
+    "timestamp": "2026-04-16T11:44:16.909077",
+    "cv_altura_pct": 100.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1115,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_15-40-20.jpg",
+    "timestamp": "2026-04-16T15:40:20.000000",
+    "cv_altura_pct": 100.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1140,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_19-58-27.jpg",
+    "timestamp": "2026-04-16T19:58:38.001766",
+    "cv_altura_pct": 94.8,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1285,
+    "session_id": 16,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-18_13-02-56.jpg",
+    "timestamp": "2026-04-18T13:03:07.451878",
+    "cv_altura_pct": 42.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 701,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_07-45-07.jpg",
+    "timestamp": "2026-04-13T07:45:18.737085",
+    "cv_altura_pct": 49.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 849,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_09-02-42.jpg",
+    "timestamp": "2026-04-15T09:02:53.188682",
+    "cv_altura_pct": 74.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1255,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_15-44-08.jpg",
+    "timestamp": "2026-04-17T15:44:19.175903",
+    "cv_altura_pct": 88.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 881,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_14-33-28.jpg",
+    "timestamp": "2026-04-15T14:33:40.414973",
+    "cv_altura_pct": 51.8,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 910,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_19-30-20.jpg",
+    "timestamp": "2026-04-15T19:30:31.878022",
+    "cv_altura_pct": 16.8,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1117,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_16-01-07.jpg",
+    "timestamp": "2026-04-16T16:01:07.000000",
+    "cv_altura_pct": 100.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 935,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_22-21-58.jpg",
+    "timestamp": "2026-04-15T22:22:07.400311",
+    "cv_altura_pct": 81.8,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 909,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_19-20-01.jpg",
+    "timestamp": "2026-04-15T19:20:10.474118",
+    "cv_altura_pct": 16.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 940,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_23-13-54.jpg",
+    "timestamp": "2026-04-15T23:14:05.416203",
+    "cv_altura_pct": 18.3,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 982,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_06-28-36.jpg",
+    "timestamp": "2026-04-16T06:28:46.487823",
+    "cv_altura_pct": 9.7,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1201,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_06-31-29.jpg",
+    "timestamp": "2026-04-17T06:31:40.665151",
+    "cv_altura_pct": 40.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1268,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_17-58-26.jpg",
+    "timestamp": "2026-04-17T17:58:38.467501",
+    "cv_altura_pct": 80.4,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1210,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_08-02-44.jpg",
+    "timestamp": "2026-04-17T08:02:55.137463",
+    "cv_altura_pct": 41.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1276,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_19-21-28.jpg",
+    "timestamp": "2026-04-17T19:21:40.337763",
+    "cv_altura_pct": 73.7,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1001,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_09-40-04.jpg",
+    "timestamp": "2026-04-16T09:40:13.726867",
+    "cv_altura_pct": 85.7,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 898,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_17-26-10.jpg",
+    "timestamp": "2026-04-15T17:26:20.780206",
+    "cv_altura_pct": 14.4,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 868,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_12-19-00.jpg",
+    "timestamp": "2026-04-15T12:19:11.461368",
+    "cv_altura_pct": 59.3,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 900,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_17-46-50.jpg",
+    "timestamp": "2026-04-15T17:47:00.515816",
+    "cv_altura_pct": 14.4,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 886,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_15-25-12.jpg",
+    "timestamp": "2026-04-15T15:25:20.160473",
+    "cv_altura_pct": 43.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1215,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_08-54-28.jpg",
+    "timestamp": "2026-04-17T08:54:40.218813",
+    "cv_altura_pct": 47.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1172,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_01-31-15.jpg",
+    "timestamp": "2026-04-17T01:31:26.004607",
+    "cv_altura_pct": 30.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1275,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_19-11-05.jpg",
+    "timestamp": "2026-04-17T19:11:17.943656",
+    "cv_altura_pct": 62.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 836,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_07-01-13.jpg",
+    "timestamp": "2026-04-15T07:01:23.207126",
+    "cv_altura_pct": 74.7,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1230,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_11-30-03.jpg",
+    "timestamp": "2026-04-17T11:30:15.897093",
+    "cv_altura_pct": 62.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 871,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_12-50-04.jpg",
+    "timestamp": "2026-04-15T12:50:14.718803",
+    "cv_altura_pct": 57.3,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1242,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_13-28-52.jpg",
+    "timestamp": "2026-04-17T13:29:03.626370",
+    "cv_altura_pct": 96.3,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 956,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_01-59-33.jpg",
+    "timestamp": "2026-04-16T01:59:42.666160",
+    "cv_altura_pct": 60.9,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 922,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_20-28-25.jpg",
+    "timestamp": "2026-04-15T20:28:35.631760",
+    "cv_altura_pct": 57.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1205,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_07-10-57.jpg",
+    "timestamp": "2026-04-17T07:11:09.708558",
+    "cv_altura_pct": 41.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 839,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_07-32-11.jpg",
+    "timestamp": "2026-04-15T07:32:21.451398",
+    "cv_altura_pct": 74.7,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1279,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_19-52-34.jpg",
+    "timestamp": "2026-04-17T19:52:46.260886",
+    "cv_altura_pct": 41.3,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1258,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_16-14-37.jpg",
+    "timestamp": "2026-04-17T16:14:48.404560",
+    "cv_altura_pct": 62.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1267,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_17-48-02.jpg",
+    "timestamp": "2026-04-17T17:48:12.819474",
+    "cv_altura_pct": 84.1,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 837,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_07-11-34.jpg",
+    "timestamp": "2026-04-15T07:11:44.159979",
+    "cv_altura_pct": 74.7,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 737,
+    "session_id": 11,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-13_13-57-52.jpg",
+    "timestamp": "2026-04-13T13:58:03.856769",
+    "cv_altura_pct": 49.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1158,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_23-06-11.jpg",
+    "timestamp": "2026-04-16T23:06:23.710463",
+    "cv_altura_pct": 38.1,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 854,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_09-54-21.jpg",
+    "timestamp": "2026-04-15T09:54:30.124115",
+    "cv_altura_pct": 74.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 947,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_00-26-34.jpg",
+    "timestamp": "2026-04-16T00:26:45.956974",
+    "cv_altura_pct": 62.2,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1119,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_16-21-55.jpg",
+    "timestamp": "2026-04-16T16:21:55.000000",
+    "cv_altura_pct": 100.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1252,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_15-12-50.jpg",
+    "timestamp": "2026-04-17T15:13:05.174830",
+    "cv_altura_pct": 95.4,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1159,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_23-16-37.jpg",
+    "timestamp": "2026-04-16T23:16:48.974463",
+    "cv_altura_pct": 37.8,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1248,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_14-31-12.jpg",
+    "timestamp": "2026-04-17T14:31:25.796601",
+    "cv_altura_pct": 78.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 915,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_19-53-06.jpg",
+    "timestamp": "2026-04-15T19:53:16.121261",
+    "cv_altura_pct": 16.5,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 1233,
+    "session_id": 15,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-17_12-01-13.jpg",
+    "timestamp": "2026-04-17T12:01:25.822374",
+    "cv_altura_pct": 62.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 985,
+    "session_id": 14,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-16_06-59-48.jpg",
+    "timestamp": "2026-04-16T06:59:57.971736",
+    "cv_altura_pct": 100.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  },
+  {
+    "id": 912,
+    "session_id": 13,
+    "foto_path": "/Users/moltbot/Projects/sourdough-monitor/photos/fermento_2026-04-15_19-42-41.jpg",
+    "timestamp": "2026-04-15T19:42:52.296650",
+    "cv_altura_pct": 27.0,
+    "calibration": {
+      "tope_y_pct": 27.058971700946532,
+      "base_y_pct": 77.4062914773443,
+      "izq_x_pct": 36.73160949050078,
+      "der_x_pct": 61.409236671543034,
+      "is_calibrated": true
+    }
+  }
+]

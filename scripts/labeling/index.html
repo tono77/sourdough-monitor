@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Sourdough Labeling</title>
+<style>
+  :root {
+    --bg: #1a1a1a;
+    --panel: #242424;
+    --text: #e8e8e8;
+    --muted: #888;
+    --accent: #4ade80;
+    --accent-dim: #2d5a3d;
+    --danger: #ef4444;
+    --border: #333;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    display: flex;
+    overflow: hidden;
+  }
+  #canvas-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    position: relative;
+  }
+  canvas {
+    max-width: 100%;
+    max-height: 100%;
+    background: #000;
+    cursor: crosshair;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  }
+  #panel {
+    width: 320px;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow-y: auto;
+  }
+  h1 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .row { display: flex; justify-content: space-between; align-items: center; }
+  .kv { display: flex; justify-content: space-between; padding: 4px 0; }
+  .kv .k { color: var(--muted); }
+  .kv .v { font-variant-numeric: tabular-nums; }
+  .altura-big {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--accent);
+    text-align: center;
+    padding: 12px;
+    background: var(--accent-dim);
+    border-radius: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .altura-big .unit { font-size: 16px; color: var(--muted); }
+  button {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    border-radius: 6px;
+    cursor: pointer;
+    font: inherit;
+  }
+  button:hover { background: #2e2e2e; }
+  button.primary {
+    background: var(--accent);
+    color: #063;
+    font-weight: 600;
+    border-color: var(--accent);
+  }
+  button.primary:hover { background: #5ef088; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 8px; }
+  .btn-row button { flex: 1; }
+  .progress-bar {
+    height: 6px;
+    background: #111;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill { height: 100%; background: var(--accent); transition: width 0.2s; }
+  .hint {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .hint kbd {
+    background: #111;
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    font-family: inherit;
+    font-size: 10px;
+  }
+  .sep { border-top: 1px solid var(--border); margin: 4px 0; }
+  .status {
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    text-align: center;
+  }
+  .status.ok { background: var(--accent-dim); color: var(--accent); }
+  .status.err { background: #4a1e1e; color: var(--danger); }
+  .status.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div id="canvas-wrap">
+  <canvas id="canvas" width="800" height="600"></canvas>
+</div>
+
+<div id="panel">
+  <div class="row">
+    <h1>Labeling</h1>
+    <span id="idx" class="v">–/–</span>
+  </div>
+
+  <div id="status" class="status hidden"></div>
+
+  <div>
+    <div class="kv"><span class="k">Sesión</span><span class="v" id="sess">–</span></div>
+    <div class="kv"><span class="k">Timestamp</span><span class="v" id="ts">–</span></div>
+    <div class="kv"><span class="k">CV actual</span><span class="v" id="cv">–</span></div>
+  </div>
+
+  <div class="altura-big">
+    <span id="altura">–</span><span class="unit">%</span>
+  </div>
+
+  <div class="btn-row">
+    <button id="btn-prev" title="← anterior">←</button>
+    <button id="btn-next" title="→ siguiente">→</button>
+  </div>
+  <div class="btn-row">
+    <button id="btn-skip">Skip</button>
+    <button id="btn-save" class="primary">Guardar &amp; siguiente</button>
+  </div>
+
+  <div class="sep"></div>
+
+  <div>
+    <div class="row"><span class="k">Progreso</span><span class="v" id="progress-text">0 / 0</span></div>
+    <div class="progress-bar"><div id="progress-fill" class="progress-fill" style="width:0%"></div></div>
+  </div>
+
+  <div class="sep"></div>
+
+  <div class="hint">
+    Calza el frasco dentro del marco rojo (puedes arrastrar la imagen con pan/zoom, <strong>o</strong> arrastrar las propias líneas rojas si el zoom de la foto es distinto). Después arrastra la <strong>línea verde</strong> al tope de la masa sólida.<br><br>
+    <strong>Arrastrar líneas</strong> (verde o rojas) · <strong>Pan imagen:</strong> drag fuera de líneas (o Shift/Alt+drag) · <strong>Zoom:</strong> rueda<br>
+    <kbd>←</kbd> <kbd>→</kbd> navegar · <kbd>Enter</kbd> guardar · <kbd>s</kbd> skip · <kbd>r</kbd> reset todo · <kbd>0</kbd> reset vista · <kbd>n</kbd> pendiente
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+// Default viewfinder rectangle — CANVAS percentages. The user can drag the
+// red lines to adjust per photo (some captures have different zoom/framing),
+// and the frame persists across samples until manually reset (`R`).
+const DEFAULT_FRAME = { tope: 20, base: 88, izq: 30, der: 70 };
+
+const state = {
+  samples: [],
+  idx: 0,
+  img: null,
+  imgNatural: { w: 0, h: 0 },
+  // Only the surface line is user-positioned per photo (image %).
+  h: { surf: 50 },
+  // Red frame in canvas %, persisted across samples until user resets.
+  frame: { ...DEFAULT_FRAME },
+  dragging: null,   // "surf" | "f_tope" | "f_base" | "f_izq" | "f_der" | null
+  panning: null,    // { lastX, lastY } while active
+  saving: false,
+  // View transform: image drawn at (offsetX,offsetY) with `scale` over canvas dims.
+  view: { scale: 1, offsetX: 0, offsetY: 0 },
+};
+
+// ─── helpers ─────────────────────────────────────────────────────────
+function fitCanvas() {
+  const wrap = document.getElementById("canvas-wrap");
+  const maxW = wrap.clientWidth - 32;
+  const maxH = wrap.clientHeight - 32;
+  if (!state.imgNatural.w) return;
+  const ratio = state.imgNatural.w / state.imgNatural.h;
+  let w = maxW, h = w / ratio;
+  if (h > maxH) { h = maxH; w = h * ratio; }
+  canvas.width = Math.floor(w);
+  canvas.height = Math.floor(h);
+  render();
+}
+
+function pctToPx(pct, dim) { return (pct / 100) * dim; }
+function pxToPct(px, dim) { return (px / dim) * 100; }
+
+// Image-space (% of natural image) → canvas pixel coords, applying the view transform.
+function imgPctToCanvas(px_pct, py_pct) {
+  const v = state.view;
+  return {
+    x: v.offsetX + (px_pct / 100) * canvas.width * v.scale,
+    y: v.offsetY + (py_pct / 100) * canvas.height * v.scale,
+  };
+}
+// Canvas pixel coords → image-space %.
+function canvasToImgPct(cx, cy) {
+  const v = state.view;
+  return {
+    x: ((cx - v.offsetX) / (canvas.width * v.scale)) * 100,
+    y: ((cy - v.offsetY) / (canvas.height * v.scale)) * 100,
+  };
+}
+function resetView() {
+  state.view = { scale: 1, offsetX: 0, offsetY: 0 };
+  render();
+}
+
+// The red frame is in canvas coords; project it back into image % via the
+// current view transform. These are the "calibration" values we save.
+function frameToImgPct() {
+  const cw = canvas.width, ch = canvas.height;
+  return {
+    tope: canvasToImgPct(0, state.frame.tope / 100 * ch).y,
+    base: canvasToImgPct(0, state.frame.base / 100 * ch).y,
+    izq:  canvasToImgPct(state.frame.izq / 100 * cw, 0).x,
+    der:  canvasToImgPct(state.frame.der / 100 * cw, 0).x,
+  };
+}
+
+// Set view.scale + offsets so an image-% calibration aligns with FRAME.
+// Horizontal fit drives the scale (jar width is the most reliable signal);
+// vertical is centered around the frame's center.
+function alignViewToCalibration(cal) {
+  const cw = canvas.width, ch = canvas.height;
+  if (!cw || !ch) return false;
+  const calWFrac = (cal.der - cal.izq) / 100;
+  if (calWFrac <= 0) return false;
+  const frameWPx = (state.frame.der - state.frame.izq) / 100 * cw;
+  let s = frameWPx / (cw * calWFrac);
+  s = Math.max(0.5, Math.min(10, s));
+  state.view.scale = s;
+  state.view.offsetX = state.frame.izq / 100 * cw - cal.izq / 100 * cw * s;
+  const frameCy = (state.frame.tope + state.frame.base) / 2 / 100 * ch;
+  const calCy = (cal.tope + cal.base) / 2 / 100 * ch;
+  state.view.offsetY = frameCy - calCy * s;
+  return true;
+}
+
+function computeAltura() {
+  const f = frameToImgPct();
+  if (f.base <= f.tope) return 0;
+  return Math.max(0, Math.min(100, (f.base - state.h.surf) / (f.base - f.tope) * 100));
+}
+
+function render() {
+  ctx.fillStyle = "#111";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (!state.img) return;
+
+  // 1. Image with the current view transform (pan/zoom)
+  const v = state.view;
+  const dw = canvas.width * v.scale;
+  const dh = canvas.height * v.scale;
+  ctx.drawImage(state.img, v.offsetX, v.offsetY, dw, dh);
+
+  // 2. Fixed red frame — drawn at canvas coords, never transformed.
+  const cw = canvas.width, ch = canvas.height;
+  const topeY = state.frame.tope / 100 * ch;
+  const baseY = state.frame.base / 100 * ch;
+  const izqX  = state.frame.izq  / 100 * cw;
+  const derX  = state.frame.der  / 100 * cw;
+
+  ctx.strokeStyle = "rgba(255, 80, 80, 0.85)";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  drawFrameHLine(topeY, "TOPE");
+  drawFrameHLine(baseY, "BASE");
+  drawFrameVLine(izqX, "IZQ");
+  drawFrameVLine(derX, "DER");
+
+  // 3. Green surface line — anchored to image (in image %), so it follows the
+  //    jar when the image is panned/zoomed. Spans across the frame horizontally.
+  ctx.setLineDash([]);
+  ctx.strokeStyle = "rgba(74, 222, 128, 0.95)";
+  ctx.lineWidth = 3;
+  const sy = imgPctToCanvas(0, state.h.surf).y;
+  ctx.beginPath();
+  ctx.moveTo(izqX, sy);
+  ctx.lineTo(derX, sy);
+  ctx.stroke();
+
+  ctx.fillStyle = "#4ade80";
+  drawHandle(izqX, sy);
+  drawHandle(derX, sy);
+  ctx.font = "bold 13px sans-serif";
+  ctx.fillText(`SUPERFICIE ${computeAltura().toFixed(1)}%`, izqX + 6, sy - 6);
+
+  document.getElementById("altura").textContent = computeAltura().toFixed(1);
+}
+
+function drawFrameHLine(y, label) {
+  ctx.beginPath();
+  ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
+  ctx.stroke();
+  ctx.save();
+  ctx.setLineDash([]);
+  ctx.fillStyle = "rgba(255,80,80,0.9)";
+  ctx.font = "11px sans-serif";
+  ctx.fillText(label, 4, y - 4);
+  ctx.restore();
+}
+function drawFrameVLine(x, label) {
+  ctx.beginPath();
+  ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height);
+  ctx.stroke();
+  ctx.save();
+  ctx.setLineDash([]);
+  ctx.fillStyle = "rgba(255,80,80,0.9)";
+  ctx.font = "11px sans-serif";
+  ctx.fillText(label, x + 4, 12);
+  ctx.restore();
+}
+function drawHandle(x, y) {
+  ctx.beginPath();
+  ctx.arc(x, y, 6, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// ─── mouse interaction ──────────────────────────────────────────────
+function getMousePos(evt) {
+  const r = canvas.getBoundingClientRect();
+  return { x: evt.clientX - r.left, y: evt.clientY - r.top };
+}
+
+// Hit-test in canvas pixels. Priority: green surface > red frame lines > pan.
+// Green and frame lines are close together (all in canvas coords), so we use
+// a tight threshold and check surface first.
+const HIT_THRESH = 10;
+function hitTest(x, y) {
+  const cw = canvas.width, ch = canvas.height;
+  const f = state.frame;
+  const izqX  = f.izq  / 100 * cw;
+  const derX  = f.der  / 100 * cw;
+  const topeY = f.tope / 100 * ch;
+  const baseY = f.base / 100 * ch;
+  const surfY = imgPctToCanvas(0, state.h.surf).y;
+
+  // Green surface line: only inside the izq-der range (with some padding)
+  if (x >= izqX - 24 && x <= derX + 24 && Math.abs(surfY - y) < HIT_THRESH) {
+    return "surf";
+  }
+  // Red frame lines (the full canvas span)
+  if (Math.abs(topeY - y) < HIT_THRESH) return "f_tope";
+  if (Math.abs(baseY - y) < HIT_THRESH) return "f_base";
+  if (Math.abs(izqX  - x) < HIT_THRESH) return "f_izq";
+  if (Math.abs(derX  - x) < HIT_THRESH) return "f_der";
+  return null;
+}
+
+function cursorFor(hit) {
+  if (hit === "surf" || hit === "f_tope" || hit === "f_base") return "ns-resize";
+  if (hit === "f_izq" || hit === "f_der") return "ew-resize";
+  return "grab";
+}
+
+canvas.addEventListener("mousedown", (e) => {
+  const { x, y } = getMousePos(e);
+  // Shift / Alt / middle-click → always pan, even over lines
+  const forcePan = e.altKey || e.shiftKey || e.button === 1;
+  const hit = forcePan ? null : hitTest(x, y);
+  if (hit) {
+    state.dragging = hit;
+  } else {
+    state.panning = { lastX: x, lastY: y };
+  }
+  canvas.style.cursor = "grabbing";
+  e.preventDefault();
+});
+canvas.addEventListener("mousemove", (e) => {
+  const { x, y } = getMousePos(e);
+  if (state.panning) {
+    state.view.offsetX += x - state.panning.lastX;
+    state.view.offsetY += y - state.panning.lastY;
+    state.panning.lastX = x;
+    state.panning.lastY = y;
+    render();
+    return;
+  }
+  if (state.dragging) {
+    const cw = canvas.width, ch = canvas.height;
+    const d = state.dragging;
+    if (d === "surf") {
+      state.h.surf = Math.max(0, Math.min(100, canvasToImgPct(x, y).y));
+    } else if (d === "f_tope" || d === "f_base") {
+      const key = d.slice(2);
+      state.frame[key] = Math.max(0, Math.min(100, y / ch * 100));
+    } else if (d === "f_izq" || d === "f_der") {
+      const key = d.slice(2);
+      state.frame[key] = Math.max(0, Math.min(100, x / cw * 100));
+    }
+    render();
+    return;
+  }
+  canvas.style.cursor = cursorFor(hitTest(x, y));
+});
+canvas.addEventListener("mouseup", () => {
+  state.dragging = null;
+  state.panning = null;
+  canvas.style.cursor = "crosshair";
+});
+canvas.addEventListener("mouseleave", () => {
+  state.dragging = null;
+  state.panning = null;
+});
+// Wheel: zoom centered on cursor
+canvas.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const { x, y } = getMousePos(e);
+  const oldScale = state.view.scale;
+  const factor = e.deltaY > 0 ? (1 / 1.15) : 1.15;
+  const newScale = Math.max(0.5, Math.min(10, oldScale * factor));
+  if (newScale === oldScale) return;
+  // Keep the image point under the cursor fixed in canvas space.
+  state.view.offsetX = x - (x - state.view.offsetX) * (newScale / oldScale);
+  state.view.offsetY = y - (y - state.view.offsetY) * (newScale / oldScale);
+  state.view.scale = newScale;
+  render();
+}, { passive: false });
+// Suppress the default middle-click paste / browser menu
+canvas.addEventListener("auxclick", (e) => { if (e.button === 1) e.preventDefault(); });
+canvas.addEventListener("contextmenu", (e) => { if (e.altKey) e.preventDefault(); });
+
+// ─── sample loading ─────────────────────────────────────────────────
+async function loadAll() {
+  const r = await fetch("/api/samples");
+  state.samples = await r.json();
+  // Start at first unlabeled if any, else 0
+  const firstUnlabeled = state.samples.findIndex(s => !s.labeled);
+  state.idx = firstUnlabeled >= 0 ? firstUnlabeled : 0;
+  updateProgress();
+  loadCurrent();
+}
+
+function loadCurrent() {
+  if (!state.samples.length) return;
+  const s = state.samples[state.idx];
+  document.getElementById("idx").textContent = `${state.idx + 1} / ${state.samples.length}`;
+  document.getElementById("sess").textContent = s.session_id;
+  document.getElementById("ts").textContent = (s.timestamp || "").slice(0, 19).replace("T", " ");
+  document.getElementById("cv").textContent = `${s.cv_altura_pct.toFixed(1)}%`;
+
+  // Pre-populate the surface line in image %.
+  // Source of truth: saved label > CV-derived estimate inside the calibration rect.
+  if (s.label) {
+    state.h.surf = s.label.surface_y_pct;
+  } else {
+    const cal = s.calibration;
+    if (cal.tope_y_pct != null && cal.base_y_pct != null) {
+      const alt = s.cv_altura_pct / 100;
+      state.h.surf = cal.base_y_pct - alt * (cal.base_y_pct - cal.tope_y_pct);
+    } else {
+      state.h.surf = 50;
+    }
+  }
+
+  // Load image, then align view so the jar lands in the red FRAME.
+  const img = new Image();
+  img.onload = () => {
+    state.img = img;
+    state.imgNatural = { w: img.naturalWidth, h: img.naturalHeight };
+    fitCanvas();  // sets canvas.width/height before we compute the view
+
+    const cal = calibrationForAlignment(s);
+    if (cal) {
+      alignViewToCalibration(cal);
+    } else {
+      state.view = { scale: 1, offsetX: 0, offsetY: 0 };
+    }
+    render();
+  };
+  img.onerror = () => showStatus("Foto no encontrada en disco", "err");
+  img.src = `/api/image?id=${s.id}&t=${Date.now()}`;
+  hideStatus();
+}
+
+// Prefer a saved label's own calibration (so re-edits restore exactly);
+// fall back to the session's stored calibration.
+function calibrationForAlignment(s) {
+  if (s.label && s.label.tope_y_pct != null) {
+    return {
+      tope: s.label.tope_y_pct, base: s.label.base_y_pct,
+      izq:  s.label.izq_x_pct,  der:  s.label.der_x_pct,
+    };
+  }
+  const c = s.calibration || {};
+  if (c.tope_y_pct != null && c.der_x_pct != null) {
+    return {
+      tope: c.tope_y_pct, base: c.base_y_pct,
+      izq:  c.izq_x_pct,  der:  c.der_x_pct,
+    };
+  }
+  return null;
+}
+
+function updateProgress() {
+  const labeled = state.samples.filter(s => s.labeled).length;
+  const total = state.samples.length;
+  document.getElementById("progress-text").textContent = `${labeled} / ${total}`;
+  document.getElementById("progress-fill").style.width = total ? `${(labeled / total) * 100}%` : "0%";
+}
+
+// ─── actions ────────────────────────────────────────────────────────
+async function saveAndNext() {
+  if (state.saving) return;
+  state.saving = true;
+  const s = state.samples[state.idx];
+  // Calibration values come from the fixed FRAME projected back into image %
+  // using the user's current pan/zoom alignment.
+  const f = frameToImgPct();
+  const payload = {
+    id: s.id,
+    session_id: s.session_id,
+    foto_path: s.foto_path,
+    timestamp: s.timestamp,
+    cv_altura_pct: s.cv_altura_pct,
+    tope_y_pct: f.tope,
+    base_y_pct: f.base,
+    izq_x_pct: f.izq,
+    der_x_pct: f.der,
+    surface_y_pct: state.h.surf,
+    altura_pct: computeAltura(),
+  };
+  try {
+    const r = await fetch("/api/label", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    s.labeled = true;
+    s.label = payload;
+    showStatus(`Guardado (${payload.altura_pct.toFixed(1)}%)`, "ok");
+    updateProgress();
+    gotoNextUnlabeled();
+  } catch (e) {
+    showStatus(`Error al guardar: ${e.message}`, "err");
+  } finally {
+    state.saving = false;
+  }
+}
+
+function gotoNextUnlabeled() {
+  const n = state.samples.length;
+  for (let i = 1; i <= n; i++) {
+    const j = (state.idx + i) % n;
+    if (!state.samples[j].labeled) {
+      state.idx = j;
+      loadCurrent();
+      return;
+    }
+  }
+  // All labeled
+  showStatus("¡Todas las muestras etiquetadas!", "ok");
+}
+
+function navigate(delta) {
+  const n = state.samples.length;
+  if (!n) return;
+  state.idx = (state.idx + delta + n) % n;
+  loadCurrent();
+}
+
+// "r" → reset frame to default, realign the view so the session's stored
+// calibration lands inside the default frame, and put the surface back at
+// the CV-estimated position. Undoes all manual adjustments.
+function resetHandles() {
+  state.frame = { ...DEFAULT_FRAME };
+  const s = state.samples[state.idx];
+  const cal = calibrationForAlignment(s);
+  if (cal) {
+    alignViewToCalibration(cal);
+    const alt = s.cv_altura_pct / 100;
+    state.h.surf = cal.base - alt * (cal.base - cal.tope);
+  } else {
+    state.view = { scale: 1, offsetX: 0, offsetY: 0 };
+    state.h.surf = 50;
+  }
+  render();
+}
+
+function showStatus(msg, kind) {
+  const el = document.getElementById("status");
+  el.textContent = msg;
+  el.className = `status ${kind}`;
+  clearTimeout(showStatus._t);
+  showStatus._t = setTimeout(hideStatus, 2500);
+}
+function hideStatus() {
+  document.getElementById("status").className = "status hidden";
+}
+
+// ─── wire up ────────────────────────────────────────────────────────
+document.getElementById("btn-prev").addEventListener("click", () => navigate(-1));
+document.getElementById("btn-next").addEventListener("click", () => navigate(1));
+document.getElementById("btn-skip").addEventListener("click", () => navigate(1));
+document.getElementById("btn-save").addEventListener("click", saveAndNext);
+
+document.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT") return;
+  if (e.key === "ArrowLeft") { navigate(-1); e.preventDefault(); }
+  else if (e.key === "ArrowRight") { navigate(1); e.preventDefault(); }
+  else if (e.key === "Enter") { saveAndNext(); e.preventDefault(); }
+  else if (e.key === "s" || e.key === "S") { navigate(1); }
+  else if (e.key === "r" || e.key === "R") { resetHandles(); }
+  else if (e.key === "n" || e.key === "N") { gotoNextUnlabeled(); }
+  else if (e.key === "0") { resetView(); }
+});
+
+window.addEventListener("resize", fitCanvas);
+
+loadAll();
+</script>
+</body>
+</html>
