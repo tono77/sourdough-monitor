@@ -291,6 +291,29 @@
     text-align: center;
 }
 
+.md-comparison {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    font-size: 13px;
+}
+.md-cmp-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+}
+.md-cmp-k { color: rgba(255,255,255,0.6); }
+.md-cmp-v { font-variant-numeric: tabular-nums; font-weight: 600; color: #fff; }
+.md-cmp-v.md-cmp-ml { color: #4ade80; }
+.md-cmp-delta {
+    border-top: 1px solid rgba(255,255,255,0.08);
+    margin-top: 4px;
+    padding-top: 6px;
+}
+
 .md-fields {
     display: flex;
     flex-direction: column;

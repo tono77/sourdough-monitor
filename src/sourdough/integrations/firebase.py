@@ -101,6 +101,7 @@ class FirebaseClient:
                 "confianza": measurement_data.get("confianza"),
                 "modo_analisis": measurement_data.get("modo_analisis"),
                 "altura_pct": measurement_data.get("altura_pct"),
+                "ml_altura_pct": measurement_data.get("ml_altura_pct"),
                 "crecimiento_pct": measurement_data.get("crecimiento_pct"),
                 "fuente": measurement_data.get("fuente"),
                 "volumen_ml": measurement_data.get("volumen_ml"),

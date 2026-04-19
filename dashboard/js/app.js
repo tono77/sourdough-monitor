@@ -416,6 +416,25 @@ function updateDashboard(session, measurements) {
             }
         }
 
+        // ML prediction comparison (shown under vs-anterior)
+        const mlEl = document.getElementById('levelMlCompare');
+        if (mlEl) {
+            const fusedAltura = latest.altura_pct != null ? parseFloat(latest.altura_pct) : null;
+            const mlAltura = latest.ml_altura_pct != null ? parseFloat(latest.ml_altura_pct) : null;
+            if (mlAltura != null) {
+                if (fusedAltura != null) {
+                    const delta = mlAltura - fusedAltura;
+                    const sign = delta >= 0 ? '+' : '';
+                    mlEl.textContent = `ML: ${mlAltura.toFixed(0)}% (${sign}${delta.toFixed(1)})`;
+                } else {
+                    mlEl.textContent = `ML: ${mlAltura.toFixed(0)}%`;
+                }
+                mlEl.style.display = 'block';
+            } else {
+                mlEl.style.display = 'none';
+            }
+        }
+
         const bub = bubbleDisplay[latest.burbujas] || { emoji: '--', text: '--' };
         document.getElementById('bubblesValue').textContent = bub.emoji;
         document.getElementById('bubblesSub').textContent = bub.text;
