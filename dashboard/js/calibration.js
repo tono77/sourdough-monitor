@@ -1,3 +1,5 @@
+import { clearRememberedFrame } from './measurement-detail.js';
+
 // ─── Calibration: frame-based canvas UI ───
 //
 // Replaces the old 5-click flow with a draggable red rectangle + orange band
@@ -170,6 +172,9 @@ async function saveCalibration() {
       fondo_y_pct: banda,
       is_calibrated: 1,
     });
+    // Invalidate any sticky frame from prior corrections so the next time the
+    // user opens the measurement editor it seeds from this fresh calibration.
+    clearRememberedFrame();
     const cb = _onComplete;
     closeModal();
     if (cb) cb();
