@@ -30,7 +30,7 @@ import { initCharts, updateCharts, setOnPointClick } from './charts.js';
 import { initMeasurementDetail, openMeasurementDetail, closeMeasurementDetail, saveMeasurementDetail, deleteMeasurement, clearRememberedFrame } from './measurement-detail.js';
 import { openLightbox, openLightboxAt, openLightboxSrc, lightboxNav, closeLightbox, updateLatestPhoto, updateGallery, setupLightboxKeyboard } from './gallery.js';
 import { initCalibration, startCalibration, getIsCalibrating } from './calibration.js';
-import { buildGrowthData, startTimer, clearTimer, promptEditCrecimiento, promptNewCycle } from './utils.js';
+import { buildGrowthData, startTimer, clearTimer, promptNewCycle } from './utils.js';
 
 // ─── Firebase config ───
 const firebaseConfig = {
@@ -89,8 +89,7 @@ window.saveMeasurementDetail = saveMeasurementDetail;
 window.deleteMeasurement = deleteMeasurement;
 
 // ─── Expose utility functions to window ───
-window.promptEditCrecimiento = () => promptEditCrecimiento(db, doc, updateDoc, currentSessionId, allMeasurements);
-window.promptNewCycle = () => promptNewCycle(db, collection, addDoc, currentSessionId, () => startCalibration(), clearRememberedFrame);
+window.promptNewCycle = () => promptNewCycle(db, collection, addDoc, currentSessionId, () => startCalibration(), clearRememberedFrame, doc, updateDoc);
 
 // ─── Retrain trigger + live status banner ───
 let retrainStateUnsubscribe = null;
@@ -476,23 +475,18 @@ function updateDashboard(session, measurements) {
             }
         }
 
-        // ML prediction comparison (shown under vs-anterior)
+        // Show the two altura measurements side-by-side: the fused CV+Claude
+        // reading ("Trad") and the ML model prediction. Hidden if neither is
+        // available yet.
         const mlEl = document.getElementById('levelMlCompare');
         if (mlEl) {
             const fusedAltura = latest.altura_pct != null ? parseFloat(latest.altura_pct) : null;
             const mlAltura = latest.ml_altura_pct != null ? parseFloat(latest.ml_altura_pct) : null;
-            if (mlAltura != null) {
-                if (fusedAltura != null) {
-                    const delta = mlAltura - fusedAltura;
-                    const sign = delta >= 0 ? '+' : '';
-                    mlEl.textContent = `ML: ${mlAltura.toFixed(0)}% (${sign}${delta.toFixed(1)})`;
-                } else {
-                    mlEl.textContent = `ML: ${mlAltura.toFixed(0)}%`;
-                }
-                mlEl.style.display = 'block';
-            } else {
-                mlEl.style.display = 'none';
-            }
+            const tradSpan = document.getElementById('levelTradValue');
+            const mlSpan = document.getElementById('levelMlValue');
+            if (tradSpan) tradSpan.textContent = fusedAltura != null ? `${fusedAltura.toFixed(0)}%` : '—';
+            if (mlSpan)   mlSpan.textContent   = mlAltura != null    ? `${mlAltura.toFixed(0)}%`    : '—';
+            mlEl.style.display = (fusedAltura != null || mlAltura != null) ? 'block' : 'none';
         }
 
         const bub = bubbleDisplay[latest.burbujas] || { emoji: '--', text: '--' };

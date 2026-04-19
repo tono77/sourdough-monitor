@@ -97,41 +97,7 @@ export function formatTime(isoString) {
     return t.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-// ─── Prompt-based actions (exposed to window from app.js) ───
-export async function promptEditCrecimiento(db, doc, updateDoc, currentSessionId, allMeasurements) {
-    if (!currentSessionId || allMeasurements.length === 0) {
-        alert("No hay mediciones para corregir aun.");
-        return;
-    }
-
-    // Edit the latest measurement explicitly
-    const latestValid = [...allMeasurements].reverse().find(m => m.nivel_pct != null || m._id != null);
-    if (!latestValid) return;
-
-    const realId = latestValid._id || latestValid.timestamp.replace(":", "-").replace(".", "-");
-
-    const currentVal = prompt(`Corrige la posicion de la masa en el frasco (0-100%) para la ultima foto (${new Date(latestValid.timestamp).toLocaleTimeString()}):\n\n0% = fondo del frasco\n100% = tapa del frasco`,
-                              latestValid.altura_pct || latestValid.nivel_pct || "");
-    if (currentVal !== null && currentVal.trim() !== "") {
-        const newVal = parseFloat(currentVal);
-        if (!isNaN(newVal)) {
-            try {
-                const mRef = doc(db, "sesiones", currentSessionId, "mediciones", realId);
-                await updateDoc(mRef, {
-                    nivel_pct: newVal,
-                    altura_pct_corrected: newVal,
-                    is_manual_override: true,
-                    notas: "Medicion corregida manualmente"
-                });
-                alert("Correccion guardada con exito! Esto ayudara al modelo a aprender.");
-            } catch (e) {
-                alert("Error al actualizar la lectura: " + e.message);
-            }
-        }
-    }
-}
-
-export async function promptNewCycle(db, collection, addDoc, currentSessionId, startCalibration, onCycleMarked) {
+export async function promptNewCycle(db, collection, addDoc, currentSessionId, startCalibration, onCycleMarked, doc, updateDoc) {
     if (!currentSessionId) return;
     const note = prompt("Marca un Nuevo Ciclo de Alimentacion.\nAnade una nota opcional (ej: 'Alimentado ratio 1:2:2'):");
     if (note === null) return; // Se cancelo
@@ -148,6 +114,19 @@ export async function promptNewCycle(db, collection, addDoc, currentSessionId, s
         console.error("Error creating cycle:", err);
         alert("Hubo un error anadiendo el nuevo ciclo.");
         return;
+    }
+
+    // A new cycle resets crecimiento to 0%, so the "ventana para pan" banner
+    // (which only makes sense while dough is above the threshold) should
+    // disappear immediately rather than wait for the next capture.
+    if (typeof doc === "function" && typeof updateDoc === "function") {
+        try {
+            await updateDoc(doc(db, 'sesiones', currentSessionId), {
+                ventana_pan_activa: false,
+            });
+        } catch (e) {
+            console.warn("Could not reset ventana_pan_activa:", e);
+        }
     }
 
     // A new cycle means the jar likely moved (refresh) so anything sticky from

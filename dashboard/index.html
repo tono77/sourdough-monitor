@@ -121,12 +121,14 @@
             <!-- Top Row: Metrics + Photo -->
             <div class="top-dash-grid">
                 <div class="card metric-card level" style="position:relative;">
-                    <button class="btn-edit-metric" onclick="promptEditCrecimiento()" title="Corregir medida">✎</button>
                     <div id="levelValue" class="metric-value">--</div>
                     <div class="metric-label">Nivel en frasco</div>
                     <div id="levelSub" class="metric-sub"></div>
-                    <div id="levelVsAnterior" class="metric-sub" style="margin-top:2px;font-size:10px;color:var(--text-muted)">vs anterior</div>
-                    <div id="levelMlCompare" class="metric-sub" style="margin-top:2px;font-size:10px;color:#4ade80;display:none">ML: --</div>
+                    <div id="levelMlCompare" class="metric-sub" style="margin-top:4px;font-size:11px;display:none">
+                        <span style="color:#e94560">Trad: <span id="levelTradValue">--</span></span>
+                        <span style="color:var(--text-muted);margin:0 4px">·</span>
+                        <span style="color:#4ade80">ML: <span id="levelMlValue">--</span></span>
+                    </div>
                 </div>
                 <div class="card metric-card bubbles">
                     <div id="bubblesValue" class="metric-value">--</div>
