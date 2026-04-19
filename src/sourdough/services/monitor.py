@@ -347,12 +347,12 @@ class Monitor:
             if state == "opened":
                 self._firebase.send_push_notification(
                     "🍞 ¡Ventana para Pan!",
-                    "Tu masa madre superó el 90% de crecimiento. Es momento de hornear.",
+                    "Tu masa madre dobló (100% de crecimiento). Es momento de hornear.",
                 )
             elif state == "closed":
                 self._firebase.send_push_notification(
                     "⏰ Ventana Cerrada",
-                    "Tu masa madre bajó del 90%. La ventana para hornear se cerró.",
+                    "Tu masa madre bajó del 100%. La ventana para hornear se cerró.",
                 )
 
     def _check_hibernation(self) -> bool:
