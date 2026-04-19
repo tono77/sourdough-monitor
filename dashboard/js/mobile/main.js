@@ -130,7 +130,13 @@ async function newCycle() {
       confianza: 5,
     });
     await updateDoc(doc(db, 'sesiones', state.session.id), { ventana_pan_activa: false });
-    toast('Ciclo nuevo marcado');
+    // Wake from refrigerador if needed and request a fresh capture — a
+    // refreshed masa looks nothing like the previous photo, so the old frame
+    // is misleading for training.
+    const cfg = { capture_requested_at: new Date().toISOString() };
+    if (state.isHibernating) cfg.is_hibernating = false;
+    await setDoc(doc(db, 'app_config', 'state'), cfg, { merge: true });
+    toast(state.isHibernating ? 'Despertando y tomando foto nueva…' : 'Ciclo marcado. Tomando foto nueva…');
     vibrate(15);
   } catch (e) {
     toast('Error: ' + (e.message || e));

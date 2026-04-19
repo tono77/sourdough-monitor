@@ -63,6 +63,10 @@ class Monitor:
         # loop exits at the end of the current cycle so launchd KeepAlive
         # restarts the monitor with the fresh ml_model.pth loaded.
         self._exit_after_cycle = False
+        # Last consumed value of app_config.state.capture_requested_at. When
+        # the dashboard advances that timestamp we break out of the inter-
+        # cycle sleep early and capture immediately.
+        self._last_capture_request_ts: str | None = None
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -449,18 +453,35 @@ class Monitor:
         """Sleep in small increments to allow graceful shutdown.
 
         When wake_on_hibernation is True, break early if the dashboard
-        toggles hibernation on, so refrigerar takes effect within ~15s
-        instead of waiting for the full capture interval.
+        toggles hibernation on (so refrigerar takes effect within ~15s) or
+        requests a fresh capture (new cycle / capture_requested_at bump), so
+        a just-refreshed masa doesn't wait the full interval for its first
+        photo.
         """
         end = time.time() + seconds
-        last_hib_check = time.time()
+        last_check = time.time()
+        # Baseline: remember the current request timestamp so only a *newer*
+        # request wakes us. Seed from last-consumed if present, so a request
+        # that arrived during the previous cycle still fires here.
+        if wake_on_hibernation and self._firebase:
+            try:
+                current = self._firebase.get_capture_request_timestamp()
+                if self._last_capture_request_ts is None:
+                    self._last_capture_request_ts = current
+            except Exception:
+                pass
         while self._running and time.time() < end:
             time.sleep(2)
-            if wake_on_hibernation and self._firebase and time.time() - last_hib_check >= 15:
-                last_hib_check = time.time()
+            if wake_on_hibernation and self._firebase and time.time() - last_check >= 15:
+                last_check = time.time()
                 try:
                     if self._firebase.get_hibernate_state():
                         log.info("Refrigerar activado desde dashboard — interrumpiendo siesta")
+                        return
+                    req = self._firebase.get_capture_request_timestamp()
+                    if req and req != self._last_capture_request_ts:
+                        log.info("Captura solicitada desde dashboard — interrumpiendo siesta")
+                        self._last_capture_request_ts = req
                         return
                 except Exception:
                     pass

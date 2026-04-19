@@ -391,11 +391,11 @@
           document.body.appendChild(s);
         }
         if (mode === 'mobile') {
-          load('js/mobile/main.js?v=1');
+          load('js/mobile/main.js?v=2');
         } else {
           loadScript('https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js', function () {
             loadScript('https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js', function () {
-              load('js/app.js?v=10');
+              load('js/app.js?v=11');
             });
           });
         }

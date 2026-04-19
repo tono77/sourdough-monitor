@@ -89,7 +89,7 @@ window.saveMeasurementDetail = saveMeasurementDetail;
 window.deleteMeasurement = deleteMeasurement;
 
 // ─── Expose utility functions to window ───
-window.promptNewCycle = () => promptNewCycle(db, collection, addDoc, currentSessionId, () => startCalibration(), clearRememberedFrame, doc, updateDoc);
+window.promptNewCycle = () => promptNewCycle(db, collection, addDoc, currentSessionId, () => startCalibration(), clearRememberedFrame, doc, updateDoc, setDoc);
 
 // ─── Retrain trigger + live status banner ───
 let retrainStateUnsubscribe = null;
