@@ -201,7 +201,34 @@ export function initCharts() {
                 borderRadius: 4,
                 minBarLength: 6,
                 barThickness: 'flex',
-                maxBarThickness: 20
+                maxBarThickness: 20,
+                order: 2
+            }, {
+                type: 'line',
+                label: 'Media',
+                data: [],
+                borderColor: 'rgba(96, 165, 250, 0.9)',
+                backgroundColor: 'transparent',
+                borderWidth: 1.5,
+                borderDash: [6, 4],
+                pointRadius: 0,
+                fill: false,
+                tension: 0,
+                spanGaps: true,
+                order: 1
+            }, {
+                type: 'line',
+                label: 'Mediana',
+                data: [],
+                borderColor: 'rgba(250, 204, 21, 0.9)',
+                backgroundColor: 'transparent',
+                borderWidth: 1.5,
+                borderDash: [2, 3],
+                pointRadius: 0,
+                fill: false,
+                tension: 0,
+                spanGaps: true,
+                order: 0
             }]
         },
         options: {
@@ -215,11 +242,18 @@ export function initCharts() {
                     borderWidth: 1,
                     padding: 12,
                     cornerRadius: 8,
+                    filter: ctx => ctx.datasetIndex === 0,
                     callbacks: {
                         label: ctx => {
                             const val = ctx.parsed.y;
                             const sign = val > 0 ? '+' : '';
-                            return `Incremento: ${sign}${val.toFixed(1)}%`;
+                            const ds = incrementChart?.data.datasets || [];
+                            const mean = ds[1]?.data?.[0]?.y;
+                            const median = ds[2]?.data?.[0]?.y;
+                            const lines = [`Incremento: ${sign}${val.toFixed(1)}%`];
+                            if (typeof mean === 'number') lines.push(`Media: ${mean >= 0 ? '+' : ''}${mean.toFixed(2)}%`);
+                            if (typeof median === 'number') lines.push(`Mediana: ${median >= 0 ? '+' : ''}${median.toFixed(2)}%`);
+                            return lines;
                         }
                     }
                 }
@@ -395,6 +429,23 @@ export function updateCharts(measurements, gd, session) {
         });
     }
     incrementChart.data.datasets[0].data = incrementData;
+
+    // Mean/median overlays — horizontal lines across the bar series so the user
+    // can eyeball whether a single bar is an outlier or typical.
+    if (incrementData.length >= 2) {
+        const vals = incrementData.map(p => p.y);
+        const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
+        const sorted = [...vals].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+        const xStart = incrementData[0].x;
+        const xEnd = incrementData[incrementData.length - 1].x;
+        incrementChart.data.datasets[1].data = [{ x: xStart, y: mean }, { x: xEnd, y: mean }];
+        incrementChart.data.datasets[2].data = [{ x: xStart, y: median }, { x: xEnd, y: median }];
+    } else {
+        incrementChart.data.datasets[1].data = [];
+        incrementChart.data.datasets[2].data = [];
+    }
 
     if (session && session.hora_inicio) {
         const startTime = new Date(session.hora_inicio).getTime();
