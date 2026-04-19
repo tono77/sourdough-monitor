@@ -131,7 +131,7 @@ export async function promptEditCrecimiento(db, doc, updateDoc, currentSessionId
     }
 }
 
-export async function promptNewCycle(db, collection, addDoc, currentSessionId) {
+export async function promptNewCycle(db, collection, addDoc, currentSessionId, startCalibration) {
     if (!currentSessionId) return;
     const note = prompt("Marca un Nuevo Ciclo de Alimentacion.\nAnade una nota opcional (ej: 'Alimentado ratio 1:2:2'):");
     if (note === null) return; // Se cancelo
@@ -144,9 +144,17 @@ export async function promptNewCycle(db, collection, addDoc, currentSessionId) {
             notas: note ? `🔄 CICLO: ${note}` : '🔄 Nuevo ciclo de alimentacion',
             confianza: 5
         });
-        alert("Nuevo ciclo marcado exitosamente! Las siguientes lecturas empezaran desde 0%.");
     } catch (err) {
         console.error("Error creating cycle:", err);
         alert("Hubo un error anadiendo el nuevo ciclo.");
+        return;
+    }
+
+    // Cada ciclo nuevo requiere recalibrar — el jar puede haberse movido al
+    // refrescar la masa. Abre el modal de calibración inmediatamente.
+    if (typeof startCalibration === "function") {
+        startCalibration();
+    } else {
+        alert("Nuevo ciclo marcado. Las siguientes lecturas empezaran desde 0%.");
     }
 }
