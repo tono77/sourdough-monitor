@@ -27,7 +27,7 @@ import {
 import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-messaging.js';
 
 import { initCharts, updateCharts, setOnPointClick } from './charts.js';
-import { initMeasurementDetail, openMeasurementDetail, closeMeasurementDetail, saveMeasurementDetail, deleteMeasurement } from './measurement-detail.js';
+import { initMeasurementDetail, openMeasurementDetail, closeMeasurementDetail, saveMeasurementDetail, deleteMeasurement, clearRememberedFrame } from './measurement-detail.js';
 import { openLightbox, openLightboxAt, openLightboxSrc, lightboxNav, closeLightbox, updateLatestPhoto, updateGallery, setupLightboxKeyboard } from './gallery.js';
 import { initCalibration, startCalibration, getIsCalibrating } from './calibration.js';
 import { buildGrowthData, startTimer, clearTimer, promptEditCrecimiento, promptNewCycle } from './utils.js';
@@ -90,7 +90,7 @@ window.deleteMeasurement = deleteMeasurement;
 
 // ─── Expose utility functions to window ───
 window.promptEditCrecimiento = () => promptEditCrecimiento(db, doc, updateDoc, currentSessionId, allMeasurements);
-window.promptNewCycle = () => promptNewCycle(db, collection, addDoc, currentSessionId, () => startCalibration());
+window.promptNewCycle = () => promptNewCycle(db, collection, addDoc, currentSessionId, () => startCalibration(), clearRememberedFrame);
 
 // ─── Setup keyboard navigation (pass calibrating state getter) ───
 setupLightboxKeyboard(getIsCalibrating);

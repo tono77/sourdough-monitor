@@ -131,7 +131,7 @@ export async function promptEditCrecimiento(db, doc, updateDoc, currentSessionId
     }
 }
 
-export async function promptNewCycle(db, collection, addDoc, currentSessionId, startCalibration) {
+export async function promptNewCycle(db, collection, addDoc, currentSessionId, startCalibration, onCycleMarked) {
     if (!currentSessionId) return;
     const note = prompt("Marca un Nuevo Ciclo de Alimentacion.\nAnade una nota opcional (ej: 'Alimentado ratio 1:2:2'):");
     if (note === null) return; // Se cancelo
@@ -149,6 +149,11 @@ export async function promptNewCycle(db, collection, addDoc, currentSessionId, s
         alert("Hubo un error anadiendo el nuevo ciclo.");
         return;
     }
+
+    // A new cycle means the jar likely moved (refresh) so anything sticky from
+    // the previous cycle (e.g. the remembered correction frame) must be
+    // cleared before the next correction picks up stale coordinates.
+    if (typeof onCycleMarked === "function") onCycleMarked();
 
     // Cada ciclo nuevo requiere recalibrar — el jar puede haberse movido al
     // refrescar la masa. Abre el modal de calibración inmediatamente.
