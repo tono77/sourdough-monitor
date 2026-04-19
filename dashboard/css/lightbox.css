@@ -165,8 +165,117 @@
     z-index: 1100;
     align-items: center;
     justify-content: center;
+    background: rgba(0,0,0,0.92);
 }
 .md-modal.open { display: flex; }
+
+/* ─── Big canvas editor layout (measurement correction) ─── */
+.md-editor .md-editor-content {
+    position: relative;
+    width: 95vw;
+    height: 95vh;
+    background: #1a1a2e;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+        "header header"
+        "body   panel";
+}
+.md-editor-header {
+    grid-area: header;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.md-editor-header h3 {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+}
+.md-editor-header .lb-btn {
+    width: 36px; height: 36px;
+    font-size: 16px;
+}
+.md-editor-body {
+    grid-area: body;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: #0f0f1a;
+}
+.md-editor-body canvas {
+    max-width: 100%;
+    max-height: 100%;
+    cursor: crosshair;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+}
+.md-editor-panel {
+    grid-area: panel;
+    padding: 18px;
+    border-left: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow-y: auto;
+}
+.md-editor-help {
+    font-size: 12px;
+    line-height: 1.6;
+    color: rgba(255,255,255,0.7);
+}
+.md-editor-help kbd {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-family: inherit;
+    font-size: 11px;
+    color: rgba(255,255,255,0.9);
+}
+.md-editor-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: auto;
+}
+.md-editor-actions button {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.md-editor-actions button:hover { opacity: 0.9; }
+.md-editor-actions button:disabled { opacity: 0.5; cursor: default; }
+/* Stack vertically on narrow screens */
+@media (max-width: 720px) {
+    .md-editor .md-editor-content {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto;
+        grid-template-areas:
+            "header"
+            "body"
+            "panel";
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+    }
+    .md-editor-panel {
+        border-left: none;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        max-height: 45vh;
+    }
+}
 
 .md-backdrop {
     position: absolute;
