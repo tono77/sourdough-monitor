@@ -78,6 +78,20 @@ export function initCharts() {
                 borderDash: [5, 5],
                 pointRadius: 0,
                 fill: false
+            }, {
+                label: 'Predicción ML (%)',
+                data: [],
+                borderColor: 'rgba(74, 222, 128, 0.85)',
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                borderDash: [4, 3],
+                pointRadius: 2,
+                pointBackgroundColor: 'rgba(74, 222, 128, 0.9)',
+                pointBorderColor: 'transparent',
+                pointHoverRadius: 5,
+                fill: false,
+                tension: 0.3,
+                spanGaps: true,
             }]
         },
         options: {
@@ -101,7 +115,15 @@ export function initCharts() {
                     padding: 12,
                     cornerRadius: 8,
                     callbacks: {
-                        label: ctx => `Nivel en frasco: ${ctx.parsed.y?.toFixed(1) ?? '--'}%`
+                        label: ctx => {
+                            const v = ctx.parsed.y;
+                            if (v == null) return '';
+                            const idx = ctx.datasetIndex;
+                            if (idx === 3) return `ML: ${v.toFixed(1)}%`;
+                            if (idx === 2) return `Umbral Pan: ${v.toFixed(0)}%`;
+                            if (idx === 1) return `Peak: ${v.toFixed(1)}%`;
+                            return `Medición: ${v.toFixed(1)}%`;
+                        }
                     }
                 }
             },
@@ -279,7 +301,7 @@ export function updateCharts(measurements, gd, session) {
         _id: m._id, foto_url: m.foto_url, foto_drive_id: m.foto_drive_id,
         timestamp: m.timestamp, burbujas: m.burbujas, textura: m.textura,
         notas: m.notas, nivel_pct: m.nivel_pct, crecimiento_pct: m.crecimiento_pct,
-        altura_pct: m.altura_pct
+        altura_pct: m.altura_pct, ml_altura_pct: m.ml_altura_pct
     }));
 
     // Pass cycle event timestamps back to plugin
@@ -299,6 +321,13 @@ export function updateCharts(measurements, gd, session) {
 
     levelChart.data.datasets[2].data = validMeds.map(m => ({
         x: new Date(m.timestamp), y: 90
+    }));
+
+    // ML prediction line — same x-axis as fused altura; null for gaps so Chart.js
+    // skips points where the model wasn't run (older data, pre-retraining).
+    levelChart.data.datasets[3].data = validMeds.map(m => ({
+        x: new Date(m.timestamp),
+        y: (typeof m.ml_altura_pct === 'number') ? m.ml_altura_pct : null,
     }));
     levelChart.update('none');
 

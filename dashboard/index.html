@@ -115,6 +115,7 @@
                     <div class="metric-label">Nivel en frasco</div>
                     <div id="levelSub" class="metric-sub"></div>
                     <div id="levelVsAnterior" class="metric-sub" style="margin-top:2px;font-size:10px;color:var(--text-muted)">vs anterior</div>
+                    <div id="levelMlCompare" class="metric-sub" style="margin-top:2px;font-size:10px;color:#4ade80;display:none">ML: --</div>
                 </div>
                 <div class="card metric-card bubbles">
                     <div id="bubblesValue" class="metric-value">--</div>
@@ -228,6 +229,11 @@
             <img id="mdPhoto" class="md-photo" src="" alt="Foto de medicion">
             <div class="md-info">
                 <div id="mdTimestamp" class="md-timestamp"></div>
+                <div id="mdComparison" class="md-comparison">
+                    <div class="md-cmp-row"><span class="md-cmp-k">Medición actual</span><span id="mdAlturaFused" class="md-cmp-v">--</span></div>
+                    <div class="md-cmp-row"><span class="md-cmp-k">Predicción ML</span><span id="mdAlturaMl" class="md-cmp-v md-cmp-ml">--</span></div>
+                    <div class="md-cmp-row md-cmp-delta"><span class="md-cmp-k">Diferencia</span><span id="mdAlturaDelta" class="md-cmp-v">--</span></div>
+                </div>
                 <div class="md-fields">
                     <label>
                         <span>Crecimiento (%)</span>

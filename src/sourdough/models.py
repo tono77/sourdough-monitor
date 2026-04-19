@@ -84,6 +84,8 @@ class Measurement:
     altura_pct: Optional[float] = None        # fused surface position (0-100% of jar)
     crecimiento_pct: Optional[float] = None   # volumetric growth from baseline
     fuente: Optional[str] = None              # "claude" | "opencv" | "fusionado"
+    # ML prediction (kept separate from fusion — shown side-by-side for comparison)
+    ml_altura_pct: Optional[float] = None     # ResNet prediction, 0-100% of jar
     # v3 ml-based fields (derived from jar's printed scale — more accurate than %)
     volumen_ml: Optional[float] = None        # dough surface in ml (0-700)
     crecimiento_ml: Optional[float] = None    # ml change vs cycle baseline
@@ -109,6 +111,7 @@ class Measurement:
             altura_pct=row.get("altura_pct"),
             crecimiento_pct=row.get("crecimiento_pct"),
             fuente=row.get("fuente"),
+            ml_altura_pct=row.get("ml_altura_pct"),
             volumen_ml=row.get("volumen_ml"),
             crecimiento_ml=row.get("crecimiento_ml"),
             crecimiento_ml_pct=row.get("crecimiento_ml_pct"),
@@ -131,6 +134,7 @@ class Measurement:
             "altura_pct": self.altura_pct,
             "crecimiento_pct": self.crecimiento_pct,
             "fuente": self.fuente,
+            "ml_altura_pct": self.ml_altura_pct,
             "volumen_ml": self.volumen_ml,
             "crecimiento_ml": self.crecimiento_ml,
             "crecimiento_ml_pct": self.crecimiento_ml_pct,

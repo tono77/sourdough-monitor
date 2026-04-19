@@ -271,8 +271,8 @@ class MeasurementRepository:
             "(sesion_id, timestamp, foto_path, nivel_pct, "
             " burbujas, textura, notas, confianza, modo_analisis, "
             " altura_y_pct, altura_pct, crecimiento_pct, fuente, "
-            " volumen_ml, crecimiento_ml, crecimiento_ml_pct) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " volumen_ml, crecimiento_ml, crecimiento_ml_pct, ml_altura_pct) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 session_id,
                 timestamp,
@@ -290,6 +290,7 @@ class MeasurementRepository:
                 merged.get("volumen_ml"),
                 merged.get("crecimiento_ml"),
                 merged.get("crecimiento_ml_pct"),
+                merged.get("ml_altura_pct"),
             ),
         )
         self._conn.execute(
@@ -312,6 +313,7 @@ class MeasurementRepository:
             altura_pct=merged.get("altura_pct"),
             crecimiento_pct=merged.get("crecimiento_pct"),
             fuente=merged.get("fuente"),
+            ml_altura_pct=merged.get("ml_altura_pct"),
             volumen_ml=merged.get("volumen_ml"),
             crecimiento_ml=merged.get("crecimiento_ml"),
             crecimiento_ml_pct=merged.get("crecimiento_ml_pct"),

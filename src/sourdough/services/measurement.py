@@ -156,6 +156,9 @@ def compute_measurement(
         "altura_pct": altura_pct,
         "crecimiento_pct": crecimiento_pct,
         "fuente": fuente,
+        # ML prediction — persisted side-by-side with the fused reading for
+        # visual comparison on the dashboard. Not included in fusion.
+        "ml_altura_pct": round(ml_altura, 1) if ml_altura is not None else None,
         # Volumetric (ml-based) — None when scale not detected
         "volumen_ml": volumen_ml,
         "crecimiento_ml": crecimiento_ml,

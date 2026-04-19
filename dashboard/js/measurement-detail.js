@@ -48,6 +48,24 @@ export function openMeasurementDetail(point) {
     document.getElementById('mdTimestamp').textContent =
         ts.toLocaleString('es', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
+    // Altura comparison: fused vs ML. Helps assess ML model accuracy at a glance.
+    const fused = point.altura_pct;
+    const ml = point.ml_altura_pct;
+    const fusedStr = (typeof fused === 'number') ? `${fused.toFixed(1)}%` : '--';
+    const mlStr = (typeof ml === 'number') ? `${ml.toFixed(1)}%` : '—';
+    document.getElementById('mdAlturaFused').textContent = fusedStr;
+    document.getElementById('mdAlturaMl').textContent = mlStr;
+    const deltaEl = document.getElementById('mdAlturaDelta');
+    if (typeof fused === 'number' && typeof ml === 'number') {
+        const delta = ml - fused;
+        const sign = delta >= 0 ? '+' : '';
+        deltaEl.textContent = `${sign}${delta.toFixed(1)}%`;
+        deltaEl.style.color = Math.abs(delta) < 5 ? '#4ade80' : (Math.abs(delta) < 15 ? '#ffd700' : '#ef4444');
+    } else {
+        deltaEl.textContent = '—';
+        deltaEl.style.color = '';
+    }
+
     // Populate editable fields
     const growth = point.crecimiento_pct != null ? point.crecimiento_pct : (point.nivel_pct || '');
     document.getElementById('mdCrecimiento').value = typeof growth === 'number' ? growth.toFixed(1) : growth;
