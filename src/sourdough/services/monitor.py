@@ -58,6 +58,11 @@ class Monitor:
         self._gdrive = None
         self._ml_predictor = None
         self._bread_window_open = False
+        self._retrain_trigger = None
+        # Set by the retrain callback after a successful retrain. The main
+        # loop exits at the end of the current cycle so launchd KeepAlive
+        # restarts the monitor with the fresh ml_model.pth loaded.
+        self._exit_after_cycle = False
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -107,6 +112,13 @@ class Monitor:
 
             # Run cycle
             self._run_cycle(conn, session, sessions, measurements)
+
+            # A successful retrain asks us to exit now, so launchd's
+            # KeepAlive restarts the process and picks up the new weights.
+            if self._exit_after_cycle:
+                log.info("Exit requested by retrain trigger — stopping so launchd reloads me.")
+                self._running = False
+                break
 
             # Wait for next cycle
             log.info("Next capture in %ds (%d min)", interval, interval // 60)
@@ -403,6 +415,19 @@ class Monitor:
             except Exception as e:
                 log.warning("ML predictor init failed: %s", e)
 
+        # Dashboard-driven retrain listener (optional — needs Firestore).
+        if self._firebase is not None:
+            try:
+                from sourdough.services.retrain_trigger import RetrainTrigger
+                # repo root = config db_path's grandparent: <root>/data/fermento.db
+                repo_root = self.config.db_path.parent.parent
+                self._retrain_trigger = RetrainTrigger(
+                    self._firebase, repo_root, on_finished=self._on_retrain_finished,
+                )
+                self._retrain_trigger.start()
+            except Exception as e:
+                log.warning("RetrainTrigger init failed: %s", e)
+
     def _sleep(self, seconds: float, wake_on_hibernation: bool = False) -> None:
         """Sleep in small increments to allow graceful shutdown.
 
@@ -426,3 +451,16 @@ class Monitor:
     def _signal_handler(self, signum, frame):
         log.info("Shutdown signal received, finishing current cycle...")
         self._running = False
+
+    def _on_retrain_finished(self, success: bool, mae):
+        """Called by RetrainTrigger when the subprocess exits.
+
+        On success, flag the loop to exit after the current cycle so launchd
+        KeepAlive restarts us and loads the new ml_model.pth.
+        """
+        if success:
+            log.info("Retrain OK (MAE=%s) — will exit after current cycle so launchd "
+                     "reloads the monitor with the new model.", mae)
+            self._exit_after_cycle = True
+        else:
+            log.warning("Retrain failed — monitor keeps running with current model.")

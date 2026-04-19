@@ -16,6 +16,13 @@ let _updateDoc = null;
 let _deleteDoc = null;
 let _getSessionId = null;
 
+// Sticky frame: after the user adjusts the red lines on one measurement,
+// the same frame is reused for every subsequent correction in this page
+// session, until either the user marks a new cycle (cleared externally) or
+// reloads the page. Per-measurement manual_* still takes precedence — this
+// only kicks in when the measurement has no correction of its own yet.
+let rememberedFrame = null;
+
 let isOpen = false;
 const state = {
   canvas: null,
@@ -37,6 +44,11 @@ export function initMeasurementDetail(db, docFn, updateDocFn, deleteDocFn, getSe
   _updateDoc = updateDocFn;
   _deleteDoc = deleteDocFn;
   _getSessionId = getSessionId;
+}
+
+/** Call from the new-cycle flow so the next correction starts with a fresh frame. */
+export function clearRememberedFrame() {
+  rememberedFrame = null;
 }
 
 export function openMeasurementDetail(point) {
@@ -86,25 +98,26 @@ export function openMeasurementDetail(point) {
         // User can zoom in with the wheel if they need precision.
         state.view = { scale: 1, offsetX: 0, offsetY: 0 };
 
-        // Frame position (canvas %, which equals image % at identity view):
-        // 1) previous manual correction on this measurement
-        // 2) session calibration
-        // 3) defaults
+        // Frame position (canvas %, which equals image % at identity view).
+        // Priority: measurement's own correction > remembered (from previous
+        // correction this session) > session calibration > defaults.
         if (typeof point.manual_tope_y_pct === 'number') {
           state.frame = {
             tope: point.manual_tope_y_pct, base: point.manual_base_y_pct,
             izq:  point.manual_izq_x_pct,  der:  point.manual_der_x_pct,
           };
           state.surf = point.manual_surface_y_pct;
-        } else if (sessionCal && sessionCal.tope != null && sessionCal.izq != null) {
-          state.frame = {
-            tope: sessionCal.tope, base: sessionCal.base,
-            izq:  sessionCal.izq,  der:  sessionCal.der,
-          };
-          const alt = (typeof point.altura_pct === 'number') ? point.altura_pct : 50;
-          state.surf = state.frame.base - (alt / 100) * (state.frame.base - state.frame.tope);
         } else {
-          state.frame = { ...DEFAULT_FRAME };
+          if (rememberedFrame) {
+            state.frame = { ...rememberedFrame };
+          } else if (sessionCal && sessionCal.tope != null && sessionCal.izq != null) {
+            state.frame = {
+              tope: sessionCal.tope, base: sessionCal.base,
+              izq:  sessionCal.izq,  der:  sessionCal.der,
+            };
+          } else {
+            state.frame = { ...DEFAULT_FRAME };
+          }
           const alt = (typeof point.altura_pct === 'number') ? point.altura_pct : 50;
           state.surf = state.frame.base - (alt / 100) * (state.frame.base - state.frame.tope);
         }
@@ -187,6 +200,9 @@ export async function saveMeasurementDetail() {
       timeout,
     ]);
     console.log('[md] save OK');
+    // Remember the frame so the next unlabeled measurement in this session
+    // opens with the same red lines instead of re-seeding from calibration.
+    rememberedFrame = { ...state.frame };
     closeMeasurementDetail();
   } catch (e) {
     console.error('[md] save error:', e);

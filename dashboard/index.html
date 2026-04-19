@@ -107,15 +107,28 @@
                 <span id="notesText" class="notes-text"></span>
             </div>
 
+            <!-- Retrain Status Banner -->
+            <div id="retrainBanner" class="calib-banner" style="background:linear-gradient(135deg, rgba(124,58,237,0.08), rgba(74,222,128,0.08));border-color:rgba(124,58,237,0.3);display:none;">
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <span class="peak-icon">🧠</span>
+                    <div class="calib-text">
+                        <h3 style="color:#a78bfa">Reentrenando modelo ML</h3>
+                        <p id="retrainBannerMsg" style="color:var(--text-secondary);">…</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Top Row: Metrics + Photo -->
             <div class="top-dash-grid">
                 <div class="card metric-card level" style="position:relative;">
-                    <button class="btn-edit-metric" onclick="promptEditCrecimiento()" title="Corregir medida">✎</button>
                     <div id="levelValue" class="metric-value">--</div>
                     <div class="metric-label">Nivel en frasco</div>
                     <div id="levelSub" class="metric-sub"></div>
-                    <div id="levelVsAnterior" class="metric-sub" style="margin-top:2px;font-size:10px;color:var(--text-muted)">vs anterior</div>
-                    <div id="levelMlCompare" class="metric-sub" style="margin-top:2px;font-size:10px;color:#4ade80;display:none">ML: --</div>
+                    <div id="levelMlCompare" class="metric-sub" style="margin-top:6px;font-size:15px;font-weight:600;display:none">
+                        <span style="color:#e94560">Trad: <span id="levelTradValue">--</span></span>
+                        <span style="color:var(--text-muted);margin:0 6px;font-weight:400">·</span>
+                        <span style="color:#4ade80">ML: <span id="levelMlValue">--</span></span>
+                    </div>
                 </div>
                 <div class="card metric-card bubbles">
                     <div id="bubblesValue" class="metric-value">--</div>
@@ -148,6 +161,7 @@
                         <div class="chart-actions">
                             <button class="btn-calib" style="background:#4caf50;" onclick="startCalibration()">📐 Calibrar</button>
                             <button class="btn-calib" style="background:#ff6b35;" onclick="promptNewCycle()">🔄 Nuevo Ciclo</button>
+                            <button id="retrainBtn" class="btn-calib" style="background:#7c3aed;" onclick="requestRetrain()">🧠 Reentrenar ML</button>
                         </div>
                     </div>
                     <div class="chart-container">

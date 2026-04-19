@@ -27,10 +27,10 @@ import {
 import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-messaging.js';
 
 import { initCharts, updateCharts, setOnPointClick } from './charts.js';
-import { initMeasurementDetail, openMeasurementDetail, closeMeasurementDetail, saveMeasurementDetail, deleteMeasurement } from './measurement-detail.js';
+import { initMeasurementDetail, openMeasurementDetail, closeMeasurementDetail, saveMeasurementDetail, deleteMeasurement, clearRememberedFrame } from './measurement-detail.js';
 import { openLightbox, openLightboxAt, openLightboxSrc, lightboxNav, closeLightbox, updateLatestPhoto, updateGallery, setupLightboxKeyboard } from './gallery.js';
 import { initCalibration, startCalibration, getIsCalibrating } from './calibration.js';
-import { buildGrowthData, startTimer, clearTimer, promptEditCrecimiento, promptNewCycle } from './utils.js';
+import { buildGrowthData, startTimer, clearTimer, promptNewCycle } from './utils.js';
 
 // ─── Firebase config ───
 const firebaseConfig = {
@@ -89,8 +89,83 @@ window.saveMeasurementDetail = saveMeasurementDetail;
 window.deleteMeasurement = deleteMeasurement;
 
 // ─── Expose utility functions to window ───
-window.promptEditCrecimiento = () => promptEditCrecimiento(db, doc, updateDoc, currentSessionId, allMeasurements);
-window.promptNewCycle = () => promptNewCycle(db, collection, addDoc, currentSessionId, () => startCalibration());
+window.promptNewCycle = () => promptNewCycle(db, collection, addDoc, currentSessionId, () => startCalibration(), clearRememberedFrame, doc, updateDoc);
+
+// ─── Retrain trigger + live status banner ───
+let retrainStateUnsubscribe = null;
+window.requestRetrain = async () => {
+    if (!confirm("¿Reentrenar el modelo ML con todas las correcciones acumuladas?\n\nEsto toma ~2 min. El monitor se reinicia automáticamente al terminar.")) return;
+    try {
+        await setDoc(doc(db, 'app_config', 'retrain_state'), {
+            state: 'requested',
+            requested_at: new Date().toISOString(),
+            message: 'Solicitado desde el dashboard',
+        }, { merge: true });
+    } catch (e) {
+        alert("No se pudo solicitar el retrain: " + (e.message || e));
+    }
+};
+
+function subscribeRetrainState() {
+    if (retrainStateUnsubscribe) retrainStateUnsubscribe();
+    retrainStateUnsubscribe = onSnapshot(doc(db, 'app_config', 'retrain_state'), (snap) => {
+        const banner = document.getElementById('retrainBanner');
+        const bMsg   = document.getElementById('retrainBannerMsg');
+        const bTitle = banner ? banner.querySelector('.calib-text h3') : null;
+        const btn    = document.getElementById('retrainBtn');
+        if (!banner || !btn) return;
+        if (!snap.exists()) {
+            banner.style.display = 'none';
+            btn.disabled = false;
+            btn.textContent = '🧠 Reentrenar ML';
+            return;
+        }
+        const d = snap.data();
+        const state = d.state;
+        const mae = (typeof d.mae === 'number') ? d.mae.toFixed(2) + '%' : null;
+
+        // Stale-success: if the retrain finished a while ago, don't keep
+        // showing the "done" banner forever on fresh page loads.
+        if (state === 'success' && d.finished_at) {
+            const finishedMs = new Date(d.finished_at).getTime();
+            if (!Number.isNaN(finishedMs) && Date.now() - finishedMs > 60_000) {
+                banner.style.display = 'none';
+                btn.disabled = false;
+                btn.textContent = '🧠 Reentrenar ML';
+                return;
+            }
+        }
+
+        if (state === 'requested' || state === 'running') {
+            banner.style.display = 'flex';
+            banner.style.borderColor = 'rgba(124,58,237,0.3)';
+            if (bTitle) bTitle.textContent = 'Reentrenando modelo ML';
+            bMsg.textContent = d.message || 'En curso…';
+            btn.disabled = true;
+            btn.textContent = '⏳ En curso…';
+        } else if (state === 'success') {
+            banner.style.display = 'flex';
+            banner.style.borderColor = 'rgba(74,222,128,0.4)';
+            if (bTitle) bTitle.textContent = 'Modelo reentrenado';
+            bMsg.textContent = mae ? `✅ Listo (MAE ${mae}). Monitor reiniciándose…` : '✅ Listo. Monitor reiniciándose…';
+            btn.disabled = false;
+            btn.textContent = '🧠 Reentrenar ML';
+            // Auto-hide shortly after first render of a fresh success
+            setTimeout(() => { banner.style.display = 'none'; }, 8000);
+        } else if (state === 'error') {
+            banner.style.display = 'flex';
+            banner.style.borderColor = 'rgba(239,68,68,0.4)';
+            if (bTitle) bTitle.textContent = 'Error al reentrenar';
+            bMsg.textContent = '❌ ' + (d.error || d.message || 'revisa logs del monitor');
+            btn.disabled = false;
+            btn.textContent = '🧠 Reentrenar ML';
+        } else {
+            banner.style.display = 'none';
+            btn.disabled = false;
+            btn.textContent = '🧠 Reentrenar ML';
+        }
+    });
+}
 
 // ─── Setup keyboard navigation (pass calibrating state getter) ───
 setupLightboxKeyboard(getIsCalibrating);
@@ -173,6 +248,7 @@ onAuthStateChanged(auth, user => {
         initCharts();
         loadSessions();
         loadAppConfig();
+        subscribeRetrainState();
     } else {
         loginScreen.style.display = 'flex';
         appEl.classList.remove('visible');
@@ -180,6 +256,7 @@ onAuthStateChanged(auth, user => {
         if (sessionDocUnsubscribe)   { sessionDocUnsubscribe();   sessionDocUnsubscribe   = null; }
         if (sessionsUnsubscribe)     { sessionsUnsubscribe();     sessionsUnsubscribe     = null; }
         if (appConfigUnsubscribe)    { appConfigUnsubscribe();    appConfigUnsubscribe    = null; }
+        if (retrainStateUnsubscribe) { retrainStateUnsubscribe(); retrainStateUnsubscribe = null; }
     }
 });
 
@@ -390,9 +467,8 @@ function updateDashboard(session, measurements) {
                 else if (diffMl < -2) { arrow = '↓'; color = '#e94560'; }
                 const sign = diffMl > 0 ? '+' : '';
                 const sub = document.getElementById('levelSub');
-                sub.textContent = `${arrow} ${sign}${diffMl.toFixed(0)}ml`;
+                sub.textContent = `${arrow} ${sign}${diffMl.toFixed(0)}ml vs anterior`;
                 sub.style.color = color;
-                document.getElementById('levelVsAnterior').textContent = 'vs medicion anterior';
             }
         } else {
             const currentLevel = latest.altura_pct != null ? parseFloat(latest.altura_pct) : null;
@@ -410,29 +486,23 @@ function updateDashboard(session, measurements) {
 
                 const sign = diff > 0 ? '+' : '';
                 const sub = document.getElementById('levelSub');
-                sub.textContent = `${arrow} ${sign}${diff.toFixed(1)}%`;
+                sub.textContent = `${arrow} ${sign}${diff.toFixed(1)}% vs anterior`;
                 sub.style.color = color;
-                document.getElementById('levelVsAnterior').textContent = 'vs medicion anterior';
             }
         }
 
-        // ML prediction comparison (shown under vs-anterior)
+        // Show the two altura measurements side-by-side: the fused CV+Claude
+        // reading ("Trad") and the ML model prediction. Hidden if neither is
+        // available yet.
         const mlEl = document.getElementById('levelMlCompare');
         if (mlEl) {
             const fusedAltura = latest.altura_pct != null ? parseFloat(latest.altura_pct) : null;
             const mlAltura = latest.ml_altura_pct != null ? parseFloat(latest.ml_altura_pct) : null;
-            if (mlAltura != null) {
-                if (fusedAltura != null) {
-                    const delta = mlAltura - fusedAltura;
-                    const sign = delta >= 0 ? '+' : '';
-                    mlEl.textContent = `ML: ${mlAltura.toFixed(0)}% (${sign}${delta.toFixed(1)})`;
-                } else {
-                    mlEl.textContent = `ML: ${mlAltura.toFixed(0)}%`;
-                }
-                mlEl.style.display = 'block';
-            } else {
-                mlEl.style.display = 'none';
-            }
+            const tradSpan = document.getElementById('levelTradValue');
+            const mlSpan = document.getElementById('levelMlValue');
+            if (tradSpan) tradSpan.textContent = fusedAltura != null ? `${fusedAltura.toFixed(0)}%` : '—';
+            if (mlSpan)   mlSpan.textContent   = mlAltura != null    ? `${mlAltura.toFixed(0)}%`    : '—';
+            mlEl.style.display = (fusedAltura != null || mlAltura != null) ? 'block' : 'none';
         }
 
         const bub = bubbleDisplay[latest.burbujas] || { emoji: '--', text: '--' };
