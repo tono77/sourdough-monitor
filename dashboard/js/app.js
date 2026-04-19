@@ -467,9 +467,8 @@ function updateDashboard(session, measurements) {
                 else if (diffMl < -2) { arrow = '↓'; color = '#e94560'; }
                 const sign = diffMl > 0 ? '+' : '';
                 const sub = document.getElementById('levelSub');
-                sub.textContent = `${arrow} ${sign}${diffMl.toFixed(0)}ml`;
+                sub.textContent = `${arrow} ${sign}${diffMl.toFixed(0)}ml vs anterior`;
                 sub.style.color = color;
-                document.getElementById('levelVsAnterior').textContent = 'vs medicion anterior';
             }
         } else {
             const currentLevel = latest.altura_pct != null ? parseFloat(latest.altura_pct) : null;
@@ -487,9 +486,8 @@ function updateDashboard(session, measurements) {
 
                 const sign = diff > 0 ? '+' : '';
                 const sub = document.getElementById('levelSub');
-                sub.textContent = `${arrow} ${sign}${diff.toFixed(1)}%`;
+                sub.textContent = `${arrow} ${sign}${diff.toFixed(1)}% vs anterior`;
                 sub.style.color = color;
-                document.getElementById('levelVsAnterior').textContent = 'vs medicion anterior';
             }
         }
 
