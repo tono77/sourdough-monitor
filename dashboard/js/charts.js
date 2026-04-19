@@ -5,6 +5,42 @@ let levelChart = null;
 let incrementChart = null;
 let activityChart = null;
 
+const crosshairPlugin = {
+    id: 'crosshair',
+    afterEvent: (chart, args) => {
+        const e = args.event;
+        if (e.type === 'mousemove') {
+            chart._crosshair = { x: e.x, y: e.y };
+            args.changed = true;
+        } else if (e.type === 'mouseout') {
+            chart._crosshair = null;
+            args.changed = true;
+        }
+    },
+    afterDraw: (chart) => {
+        const ch = chart._crosshair;
+        if (!ch) return;
+        const xAxis = chart.scales.x;
+        const yAxis = chart.scales.y;
+        if (!xAxis || !yAxis) return;
+        if (ch.x < xAxis.left || ch.x > xAxis.right || ch.y < yAxis.top || ch.y > yAxis.bottom) return;
+
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(ch.x, yAxis.top);
+        ctx.lineTo(ch.x, yAxis.bottom);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(xAxis.left, ch.y);
+        ctx.lineTo(xAxis.right, ch.y);
+        ctx.stroke();
+        ctx.restore();
+    }
+};
+
 const verticalLinePlugin = {
     id: 'verticalLine',
     beforeDraw: (chart) => {
@@ -143,7 +179,7 @@ export function initCharts() {
                 }
             }
         },
-        plugins: [verticalLinePlugin]
+        plugins: [verticalLinePlugin, crosshairPlugin]
     });
 
     const incCtx = document.getElementById('incrementChart').getContext('2d');
@@ -204,7 +240,7 @@ export function initCharts() {
                 }
             }
         },
-        plugins: [verticalLinePlugin]
+        plugins: [verticalLinePlugin, crosshairPlugin]
     });
 
     const actCtx = document.getElementById('activityChart').getContext('2d');
@@ -270,7 +306,7 @@ export function initCharts() {
                 }
             }
         },
-        plugins: [verticalLinePlugin]
+        plugins: [verticalLinePlugin, crosshairPlugin]
     });
 }
 
