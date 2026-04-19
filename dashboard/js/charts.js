@@ -107,7 +107,7 @@ export function initCharts() {
                 pointStyle: 'star',
                 showLine: false,
             }, {
-                label: 'Umbral Pan (90%)',
+                label: 'Umbral Pan (100%)',
                 data: [],
                 borderColor: 'rgba(76, 175, 80, 0.8)',
                 borderWidth: 2,
@@ -280,7 +280,7 @@ export function initCharts() {
                 pointBorderWidth: 2,
             },
             {
-                label: 'Umbral Pan (90%)',
+                label: 'Umbral Pan (100%)',
                 data: [],
                 borderColor: 'rgba(76, 175, 80, 0.8)',
                 borderWidth: 2,
@@ -375,7 +375,7 @@ export function updateCharts(measurements, gd, session) {
         .map(({ m, i }) => ({ x: new Date(m.timestamp), y: growthArr[i] }));
 
     levelChart.data.datasets[2].data = validMeds.map(m => ({
-        x: new Date(m.timestamp), y: 90
+        x: new Date(m.timestamp), y: 100
     }));
 
     // ML prediction line — same x-axis as fused altura; null for gaps so Chart.js

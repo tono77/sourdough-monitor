@@ -14,7 +14,7 @@ from sourdough.models import Measurement
 
 log = logging.getLogger(__name__)
 
-THRESHOLD = 90.0  # 90% growth = ready for bread
+THRESHOLD = 100.0  # 100% growth (doubled) = ready for bread
 
 
 def check_bread_window(
