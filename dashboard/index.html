@@ -107,6 +107,17 @@
                 <span id="notesText" class="notes-text"></span>
             </div>
 
+            <!-- Retrain Status Banner -->
+            <div id="retrainBanner" class="calib-banner" style="background:linear-gradient(135deg, rgba(124,58,237,0.08), rgba(74,222,128,0.08));border-color:rgba(124,58,237,0.3);display:none;">
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <span class="peak-icon">🧠</span>
+                    <div class="calib-text">
+                        <h3 style="color:#a78bfa">Reentrenando modelo ML</h3>
+                        <p id="retrainBannerMsg" style="color:var(--text-secondary);">…</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Top Row: Metrics + Photo -->
             <div class="top-dash-grid">
                 <div class="card metric-card level" style="position:relative;">
@@ -148,6 +159,7 @@
                         <div class="chart-actions">
                             <button class="btn-calib" style="background:#4caf50;" onclick="startCalibration()">📐 Calibrar</button>
                             <button class="btn-calib" style="background:#ff6b35;" onclick="promptNewCycle()">🔄 Nuevo Ciclo</button>
+                            <button id="retrainBtn" class="btn-calib" style="background:#7c3aed;" onclick="requestRetrain()">🧠 Reentrenar ML</button>
                         </div>
                     </div>
                     <div class="chart-container">

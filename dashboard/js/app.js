@@ -92,6 +92,64 @@ window.deleteMeasurement = deleteMeasurement;
 window.promptEditCrecimiento = () => promptEditCrecimiento(db, doc, updateDoc, currentSessionId, allMeasurements);
 window.promptNewCycle = () => promptNewCycle(db, collection, addDoc, currentSessionId, () => startCalibration(), clearRememberedFrame);
 
+// ─── Retrain trigger + live status banner ───
+let retrainStateUnsubscribe = null;
+window.requestRetrain = async () => {
+    if (!confirm("¿Reentrenar el modelo ML con todas las correcciones acumuladas?\n\nEsto toma ~2 min. El monitor se reinicia automáticamente al terminar.")) return;
+    try {
+        await setDoc(doc(db, 'app_config', 'retrain_state'), {
+            state: 'requested',
+            requested_at: new Date().toISOString(),
+            message: 'Solicitado desde el dashboard',
+        }, { merge: true });
+    } catch (e) {
+        alert("No se pudo solicitar el retrain: " + (e.message || e));
+    }
+};
+
+function subscribeRetrainState() {
+    if (retrainStateUnsubscribe) retrainStateUnsubscribe();
+    retrainStateUnsubscribe = onSnapshot(doc(db, 'app_config', 'retrain_state'), (snap) => {
+        const banner = document.getElementById('retrainBanner');
+        const bMsg   = document.getElementById('retrainBannerMsg');
+        const btn    = document.getElementById('retrainBtn');
+        if (!banner || !btn) return;
+        if (!snap.exists()) {
+            banner.style.display = 'none';
+            btn.disabled = false;
+            btn.textContent = '🧠 Reentrenar ML';
+            return;
+        }
+        const d = snap.data();
+        const state = d.state;
+        const mae = (typeof d.mae === 'number') ? d.mae.toFixed(2) + '%' : null;
+        if (state === 'requested' || state === 'running') {
+            banner.style.display = 'flex';
+            bMsg.textContent = d.message || 'En curso…';
+            btn.disabled = true;
+            btn.textContent = '⏳ En curso…';
+        } else if (state === 'success') {
+            banner.style.display = 'flex';
+            banner.style.borderColor = 'rgba(74,222,128,0.4)';
+            bMsg.textContent = mae ? `✅ Listo (MAE ${mae}). Monitor reiniciándose…` : '✅ Listo. Monitor reiniciándose…';
+            btn.disabled = false;
+            btn.textContent = '🧠 Reentrenar ML';
+            // Auto-hide the banner a few seconds after success
+            setTimeout(() => { banner.style.display = 'none'; }, 8000);
+        } else if (state === 'error') {
+            banner.style.display = 'flex';
+            banner.style.borderColor = 'rgba(239,68,68,0.4)';
+            bMsg.textContent = '❌ Falló: ' + (d.error || d.message || 'revisa logs del monitor');
+            btn.disabled = false;
+            btn.textContent = '🧠 Reentrenar ML';
+        } else {
+            banner.style.display = 'none';
+            btn.disabled = false;
+            btn.textContent = '🧠 Reentrenar ML';
+        }
+    });
+}
+
 // ─── Setup keyboard navigation (pass calibrating state getter) ───
 setupLightboxKeyboard(getIsCalibrating);
 
@@ -173,6 +231,7 @@ onAuthStateChanged(auth, user => {
         initCharts();
         loadSessions();
         loadAppConfig();
+        subscribeRetrainState();
     } else {
         loginScreen.style.display = 'flex';
         appEl.classList.remove('visible');
@@ -180,6 +239,7 @@ onAuthStateChanged(auth, user => {
         if (sessionDocUnsubscribe)   { sessionDocUnsubscribe();   sessionDocUnsubscribe   = null; }
         if (sessionsUnsubscribe)     { sessionsUnsubscribe();     sessionsUnsubscribe     = null; }
         if (appConfigUnsubscribe)    { appConfigUnsubscribe();    appConfigUnsubscribe    = null; }
+        if (retrainStateUnsubscribe) { retrainStateUnsubscribe(); retrainStateUnsubscribe = null; }
     }
 });
 
