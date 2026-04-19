@@ -130,7 +130,7 @@
 .calib-modal-content {
     position: relative;
     width: 95vw;
-    height: 95vh;
+    height: min(90vh, calc(100vh - 60px));
     background: #1a1a2e;
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 12px;
@@ -162,6 +162,7 @@
 }
 .calib-modal-body {
     grid-area: body;
+    min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -176,6 +177,7 @@
 }
 .calib-modal-panel {
     grid-area: panel;
+    min-height: 0;
     padding: 20px;
     border-left: 1px solid rgba(255,255,255,0.08);
     display: flex;
