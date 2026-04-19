@@ -111,6 +111,7 @@ function subscribeRetrainState() {
     retrainStateUnsubscribe = onSnapshot(doc(db, 'app_config', 'retrain_state'), (snap) => {
         const banner = document.getElementById('retrainBanner');
         const bMsg   = document.getElementById('retrainBannerMsg');
+        const bTitle = banner ? banner.querySelector('.calib-text h3') : null;
         const btn    = document.getElementById('retrainBtn');
         if (!banner || !btn) return;
         if (!snap.exists()) {
@@ -122,23 +123,40 @@ function subscribeRetrainState() {
         const d = snap.data();
         const state = d.state;
         const mae = (typeof d.mae === 'number') ? d.mae.toFixed(2) + '%' : null;
+
+        // Stale-success: if the retrain finished a while ago, don't keep
+        // showing the "done" banner forever on fresh page loads.
+        if (state === 'success' && d.finished_at) {
+            const finishedMs = new Date(d.finished_at).getTime();
+            if (!Number.isNaN(finishedMs) && Date.now() - finishedMs > 60_000) {
+                banner.style.display = 'none';
+                btn.disabled = false;
+                btn.textContent = '🧠 Reentrenar ML';
+                return;
+            }
+        }
+
         if (state === 'requested' || state === 'running') {
             banner.style.display = 'flex';
+            banner.style.borderColor = 'rgba(124,58,237,0.3)';
+            if (bTitle) bTitle.textContent = 'Reentrenando modelo ML';
             bMsg.textContent = d.message || 'En curso…';
             btn.disabled = true;
             btn.textContent = '⏳ En curso…';
         } else if (state === 'success') {
             banner.style.display = 'flex';
             banner.style.borderColor = 'rgba(74,222,128,0.4)';
+            if (bTitle) bTitle.textContent = 'Modelo reentrenado';
             bMsg.textContent = mae ? `✅ Listo (MAE ${mae}). Monitor reiniciándose…` : '✅ Listo. Monitor reiniciándose…';
             btn.disabled = false;
             btn.textContent = '🧠 Reentrenar ML';
-            // Auto-hide the banner a few seconds after success
+            // Auto-hide shortly after first render of a fresh success
             setTimeout(() => { banner.style.display = 'none'; }, 8000);
         } else if (state === 'error') {
             banner.style.display = 'flex';
             banner.style.borderColor = 'rgba(239,68,68,0.4)';
-            bMsg.textContent = '❌ Falló: ' + (d.error || d.message || 'revisa logs del monitor');
+            if (bTitle) bTitle.textContent = 'Error al reentrenar';
+            bMsg.textContent = '❌ ' + (d.error || d.message || 'revisa logs del monitor');
             btn.disabled = false;
             btn.textContent = '🧠 Reentrenar ML';
         } else {
