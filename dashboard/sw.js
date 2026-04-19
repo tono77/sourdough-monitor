@@ -28,7 +28,7 @@ messaging.onBackgroundMessage((payload) => {
 });
 
 // ─── Cache config ───
-const CACHE_NAME = 'sourdough-v8';
+const CACHE_NAME = 'sourdough-v9';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
