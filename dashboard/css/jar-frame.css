@@ -1,0 +1,89 @@
+/* Shared jar-frame component styles. Used by both mobile and desktop.
+   Caller may override --jar-accent / --jar-surface-color. */
+
+.jar-frame {
+  --jar-accent: #ff6b35;
+  --jar-surface-color: #22c55e;
+  position: relative;
+  background: #141414;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.jar-frame-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.jar-frame-rect {
+  position: absolute;
+  border: 1px solid var(--jar-accent);
+  pointer-events: none;
+  box-sizing: border-box;
+  opacity: 0.75;
+}
+
+.jar-frame-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--jar-accent);
+  text-transform: uppercase;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 2px 6px;
+  border-radius: 2px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.jar-frame-handle {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
+}
+.jar-frame-handle:active { cursor: grabbing; }
+.jar-frame-handle::before,
+.jar-frame-handle::after {
+  content: "";
+  position: absolute;
+  background: var(--jar-accent);
+}
+.jar-frame-handle[data-corner="tl"]::before { top: 0; left: 0; width: 14px; height: 3px; }
+.jar-frame-handle[data-corner="tl"]::after  { top: 0; left: 0; width: 3px; height: 14px; }
+.jar-frame-handle[data-corner="tr"]::before { top: 0; right: 0; width: 14px; height: 3px; }
+.jar-frame-handle[data-corner="tr"]::after  { top: 0; right: 0; width: 3px; height: 14px; }
+.jar-frame-handle[data-corner="bl"]::before { bottom: 0; left: 0; width: 14px; height: 3px; }
+.jar-frame-handle[data-corner="bl"]::after  { bottom: 0; left: 0; width: 3px; height: 14px; }
+.jar-frame-handle[data-corner="br"]::before { bottom: 0; right: 0; width: 14px; height: 3px; }
+.jar-frame-handle[data-corner="br"]::after  { bottom: 0; right: 0; width: 3px; height: 14px; }
+
+.jar-frame-surface {
+  position: absolute;
+  height: 28px;
+  transform: translateY(-50%);
+  cursor: ns-resize;
+  pointer-events: auto;
+  touch-action: none;
+}
+.jar-frame-surface::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: var(--jar-surface-color);
+  transform: translateY(-50%);
+}

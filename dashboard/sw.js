@@ -28,19 +28,25 @@ messaging.onBackgroundMessage((payload) => {
 });
 
 // ─── Cache config ───
-const CACHE_NAME = 'sourdough-v9';
+const CACHE_NAME = 'sourdough-v10';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
   '/css/main.css',
   '/css/charts.css',
   '/css/lightbox.css',
+  '/css/mobile.css',
+  '/css/jar-frame.css',
   '/js/app.js',
   '/js/charts.js',
   '/js/gallery.js',
   '/js/calibration.js',
   '/js/utils.js',
   '/js/measurement-detail.js',
+  '/js/shared/jar-frame.js',
+  '/js/mobile/main.js',
+  '/js/mobile/home.js',
+  '/js/mobile/calibrate.js',
   '/manifest.json',
 ];
 

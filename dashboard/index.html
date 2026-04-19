@@ -5,19 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>🍞 Sourdough Monitor</title>
     <meta name="description" content="Real-time sourdough fermentation monitoring dashboard with AI-powered analysis">
-    <!-- PWA -->
+    <script>
+      (function () {
+        var params = new URLSearchParams(location.search);
+        var forced = params.get('view');
+        var isMobile;
+        if (forced === 'mobile') isMobile = true;
+        else if (forced === 'desktop') isMobile = false;
+        else isMobile = window.matchMedia('(max-width: 768px)').matches;
+        document.documentElement.dataset.mode = isMobile ? 'mobile' : 'desktop';
+      })();
+    </script>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#e94560">
+    <meta name="theme-color" content="#0a0a0a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/main.css?v=8">
     <link rel="stylesheet" href="css/charts.css?v=8">
     <link rel="stylesheet" href="css/lightbox.css?v=8">
+    <link rel="stylesheet" href="css/jar-frame.css?v=1">
+    <link rel="stylesheet" href="css/mobile.css?v=5">
 </head>
 <body>
 
@@ -39,6 +50,69 @@
             </button>
             <div class="login-footer">Solo usuarios autorizados pueden acceder</div>
         </div>
+    </div>
+
+    <!-- ─── MOBILE APP ─── -->
+    <div id="mobileApp" aria-hidden="true">
+      <div class="m-shell">
+        <header class="m-toolbar">
+          <div class="m-toolbar-left">
+            <div class="m-cycle-label" id="mCycleLabel">CICLO · T+--:--</div>
+            <div class="m-hero-row">
+              <span class="m-hero-num" id="mHeroNum">--</span>
+              <span class="m-hero-pct">%</span>
+              <span class="m-hero-delta" id="mHeroDelta"></span>
+            </div>
+          </div>
+          <div class="m-toolbar-right">
+            <button class="m-icon-btn" id="mBtnRefrigerar" title="Refrigerar">❄</button>
+            <button class="m-icon-btn" id="mBtnNuevoCiclo" title="Nuevo ciclo">↻</button>
+            <button class="m-icon-btn" id="mBtnMore" title="Más">⋯</button>
+          </div>
+        </header>
+        <div class="m-status-band" id="mStatusBand">
+          <span class="m-status-text" id="mStatusText">● CARGANDO…</span>
+          <span class="m-status-eta" id="mStatusEta"></span>
+        </div>
+        <main class="m-scroll">
+          <section class="m-photo-card">
+            <div class="m-photo-frame" id="mPhotoFrame">
+              <div class="m-photo-placeholder">📷</div>
+            </div>
+            <div class="m-photo-tag" id="mPhotoTag">ÚLTIMA · --:--</div>
+          </section>
+
+          <section class="m-section">
+            <div class="m-section-head"><span>CURVA</span><span id="mCurveMeta">— PTS</span></div>
+            <div class="m-spark" id="mSpark"></div>
+          </section>
+
+          <section class="m-stats-grid" id="mStatsGrid">
+            <div class="m-stat"><div class="m-stat-k">BURBUJAS</div><div class="m-stat-v" id="mStatBubbles">—</div></div>
+            <div class="m-stat"><div class="m-stat-k">TEXTURA</div><div class="m-stat-v" id="mStatTexture">—</div></div>
+            <div class="m-stat"><div class="m-stat-k">VEL.</div><div class="m-stat-v" id="mStatVel">—</div></div>
+          </section>
+
+          <section class="m-section">
+            <div class="m-section-head"><span>TIMELINE</span><span id="mTimelineMeta">— PENDIENTES</span></div>
+            <div class="m-timeline" id="mTimeline"></div>
+          </section>
+
+          <div class="m-user-foot" id="mUserFoot"></div>
+        </main>
+        <button class="m-fab" id="mFab">
+          <span class="m-fab-icon">⊞</span>
+          <span class="m-fab-label">CALIBRAR</span>
+          <span class="m-fab-badge" id="mFabBadge" hidden>0</span>
+        </button>
+      </div>
+      <div class="m-menu" id="mMenu" hidden>
+        <button data-act="retrain">🧠 Reentrenar ML</button>
+        <button data-act="desktop">💻 Ver versión escritorio</button>
+        <button data-act="signout">↩︎ Cerrar sesión</button>
+      </div>
+      <div class="m-toast" id="mToast" hidden></div>
+      <div class="m-calibrate" id="mCalibrate" hidden></div>
     </div>
 
     <!-- ─── MAIN APP ─── -->
@@ -235,7 +309,7 @@
                 <button class="lb-btn" onclick="closeMeasurementDetail()" title="Cerrar">✕</button>
             </div>
             <div class="md-editor-body">
-                <canvas id="mdCanvas" width="800" height="600"></canvas>
+                <div id="mdJarFrame" class="md-jar-frame"></div>
             </div>
             <div class="md-editor-panel">
                 <div class="md-comparison">
@@ -265,8 +339,8 @@
                     </label>
                 </div>
                 <div class="md-editor-help">
-                    Arrastra la <strong style="color:#4ade80">línea verde</strong> al tope real de la masa sólida (ignora espuma). Rueda del mouse para zoom, drag para pan.<br>
-                    <kbd>Enter</kbd> guardar · <kbd>Esc</kbd> cancelar · <kbd>0</kbd> reset vista
+                    Arrastra las <strong style="color:#ff6b35">esquinas naranjas</strong> para marcar los bordes del frasco, y la <strong style="color:#4ade80">línea verde</strong> al tope real de la masa (ignora espuma).<br>
+                    <kbd>Enter</kbd> guardar · <kbd>Esc</kbd> cancelar
                 </div>
                 <div class="md-editor-actions">
                     <button id="mdSaveBtn" class="btn-calib" style="background:#4caf50;" onclick="saveMeasurementDetail()">Guardar corrección</button>
@@ -300,8 +374,33 @@
         </div>
     </div>
 
-    <!-- App Module -->
-    <script type="module" src="js/app.js?v=9"></script>
+    <!-- App Module — conditional by shell mode -->
+    <script>
+      (function () {
+        var mode = document.documentElement.dataset.mode;
+        function load(src) {
+          var s = document.createElement('script');
+          s.type = 'module';
+          s.src = src;
+          document.body.appendChild(s);
+        }
+        function loadScript(src, cb) {
+          var s = document.createElement('script');
+          s.src = src;
+          s.onload = cb;
+          document.body.appendChild(s);
+        }
+        if (mode === 'mobile') {
+          load('js/mobile/main.js?v=1');
+        } else {
+          loadScript('https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js', function () {
+            loadScript('https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js', function () {
+              load('js/app.js?v=10');
+            });
+          });
+        }
+      })();
+    </script>
     <!-- Service Worker -->
     <script>
         if ('serviceWorker' in navigator) {
