@@ -185,6 +185,21 @@ class Monitor:
         # Analyze: Claude Vision
         calibration = session.calibration if session.is_calibrated else None
 
+        cycle_context = None
+        if latest_cycle_ts:
+            try:
+                cycle_dt = datetime.fromisoformat(latest_cycle_ts)
+                hours_since = (datetime.now() - cycle_dt).total_seconds() / 3600.0
+                cycle_context = (
+                    f"CONTEXTO IMPORTANTE: Hace ~{hours_since:.1f}h se descartó el fermento "
+                    f"y se reinició el ciclo con masa fresca. La IMAGEN 1 (referencia) corresponde "
+                    f"al inicio de ESTE nuevo ciclo, no al ciclo anterior. "
+                    f"Al dar tu opinion_panadero, considera que las lecturas altas anteriores "
+                    f"(~100%) son del ciclo pasado y NO aplican al estado actual."
+                )
+            except (ValueError, TypeError):
+                pass
+
         log.info("Enviando foto a Claude Vision...")
         try:
             claude_result = analyze_photo(
@@ -193,6 +208,8 @@ class Monitor:
                 baseline_foto_path=baseline_foto,
                 corrections_file=corrections_file if corrections_file.exists() else None,
                 calibration=calibration,
+                cycle_context=cycle_context,
+                cycle_ts=latest_cycle_ts,
             )
             log.info("Claude: %s", json.dumps(claude_result, indent=2, ensure_ascii=False))
 

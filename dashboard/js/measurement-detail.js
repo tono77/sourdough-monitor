@@ -239,10 +239,14 @@ async function fetchSessionCalibration() {
   if (!sid) return null;
   try {
     const { getDoc } = await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
-    const snap = await getDoc(_doc(_db, 'sesiones', sid));
-    if (!snap.exists()) return null;
+    const snap = await getDoc(_doc(_db, 'sesiones', String(sid)));
+    if (!snap.exists()) { console.warn('[md] session doc not found for', sid); return null; }
     const d = snap.data();
-    if (!d.is_calibrated) return null;
+    // Accept calibration whenever the frame coords are present, even if the
+    // is_calibrated flag was cleared by a stale python sync.
+    const hasFrame = d.tope_y_pct != null && d.base_y_pct != null
+                  && d.izq_x_pct != null && d.der_x_pct != null;
+    if (!hasFrame) { console.warn('[md] session has no calibration frame', d); return null; }
     return { tope: d.tope_y_pct, base: d.base_y_pct, izq: d.izq_x_pct, der: d.der_x_pct };
   } catch (e) {
     console.warn("Could not fetch session calibration:", e);

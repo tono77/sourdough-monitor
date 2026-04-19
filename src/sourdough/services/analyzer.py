@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 
 PROMPT_UNIFIED = """Eres un experto midiendo la altura de masa madre en un frasco de vidrio.
 
-{baseline_context}
+{cycle_context}{baseline_context}
 
 {crop_context}TAREA: Mide la posición de la SUPERFICIE de la masa en el frasco.
 - 0% = el FONDO de la imagen (fondo del frasco)
@@ -121,8 +121,12 @@ def _detect_media_type(photo_path: str) -> str:
     }.get(ext, "image/jpeg")
 
 
-def _load_corrections(corrections_file: Path) -> str:
-    """Build corrections context string from dataset_corrections.json."""
+def _load_corrections(corrections_file: Path, cycle_ts: str | None = None) -> str:
+    """Build corrections context string from dataset_corrections.json.
+
+    If cycle_ts is provided, corrections older than the cycle reset are dropped
+    so Claude doesn't compare the fresh jar against pre-refresh readings.
+    """
     if not corrections_file.exists():
         return ""
     try:
@@ -130,6 +134,10 @@ def _load_corrections(corrections_file: Path) -> str:
             corrections = json.load(f)
         if not corrections:
             return ""
+        if cycle_ts:
+            corrections = [c for c in corrections if c.get("timestamp", "") >= cycle_ts]
+            if not corrections:
+                return ""
         recent = corrections[-3:]
         lines = ["CORRECCIONES MANUALES RECIENTES (posición absoluta en frasco):"]
         for c in recent:
@@ -374,6 +382,8 @@ def analyze_photo(
     baseline_foto_path: str | None = None,
     corrections_file: Path | None = None,
     calibration: "CalibrationBounds | None" = None,
+    cycle_context: str | None = None,
+    cycle_ts: str | None = None,
 ) -> dict:
     """Analyze a fermentation photo with Claude Vision.
 
@@ -394,10 +404,12 @@ def analyze_photo(
     current_b64 = _encode_image(photo_to_encode)
     current_media = _detect_media_type(photo_to_encode)
 
-    # Corrections context
+    # Corrections context (filter out pre-cycle corrections if a reset happened)
     corr_ctx = ""
     if corrections_file:
-        corr_ctx = _load_corrections(corrections_file)
+        corr_ctx = _load_corrections(corrections_file, cycle_ts=cycle_ts)
+
+    cycle_ctx = f"{cycle_context}\n\n" if cycle_context else ""
 
     # Calibration context — tell Claude where the band actually is
     calib_ctx = ""
@@ -437,6 +449,7 @@ def analyze_photo(
         baseline_media = _detect_media_type(baseline_foto_path)
 
         prompt = PROMPT_UNIFIED.format(
+            cycle_context=cycle_ctx,
             baseline_context=baseline_ctx,
             crop_context=crop_ctx,
             calibration_context=calib_ctx,
@@ -449,6 +462,7 @@ def analyze_photo(
         ]
     else:
         prompt = PROMPT_UNIFIED.format(
+            cycle_context=cycle_ctx,
             baseline_context="Se muestra 1 foto del frasco.",
             crop_context=crop_ctx,
             calibration_context=calib_ctx,
