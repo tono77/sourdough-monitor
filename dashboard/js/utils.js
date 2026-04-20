@@ -97,7 +97,7 @@ export function formatTime(isoString) {
     return t.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-export async function promptNewCycle(db, collection, addDoc, currentSessionId, startCalibration, onCycleMarked, doc, updateDoc) {
+export async function promptNewCycle(db, collection, addDoc, currentSessionId, startCalibration, onCycleMarked, doc, updateDoc, setDoc) {
     if (!currentSessionId) return;
     const note = prompt("Marca un Nuevo Ciclo de Alimentacion.\nAnade una nota opcional (ej: 'Alimentado ratio 1:2:2'):");
     if (note === null) return; // Se cancelo
@@ -126,6 +126,20 @@ export async function promptNewCycle(db, collection, addDoc, currentSessionId, s
             });
         } catch (e) {
             console.warn("Could not reset ventana_pan_activa:", e);
+        }
+    }
+
+    // Wake from refrigerador (if any) and request a fresh capture — a just
+    // refreshed masa looks nothing like the last photo, so relying on the
+    // previous frame for calibration produces misleading labels.
+    if (typeof doc === "function" && typeof setDoc === "function") {
+        try {
+            await setDoc(doc(db, 'app_config', 'state'), {
+                is_hibernating: false,
+                capture_requested_at: new Date().toISOString(),
+            }, { merge: true });
+        } catch (e) {
+            console.warn("Could not request fresh capture:", e);
         }
     }
 

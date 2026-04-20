@@ -255,3 +255,22 @@ class FirebaseClient:
         except Exception:
             pass
         return False
+
+    def get_capture_request_timestamp(self) -> str | None:
+        """Dashboard-driven "capture now" signal.
+
+        The dashboard writes `capture_requested_at` (ISO timestamp) into
+        `app_config/state` when the user starts a new cycle, so we take a
+        fresh photo of the just-refreshed masa instead of waiting for the
+        next scheduled capture. Returns the string as-is; the monitor
+        compares it against the last value it consumed.
+        """
+        if self._db is None:
+            return None
+        try:
+            doc = self._db.collection("app_config").document("state").get()
+            if doc.exists:
+                return doc.to_dict().get("capture_requested_at")
+        except Exception:
+            pass
+        return None
