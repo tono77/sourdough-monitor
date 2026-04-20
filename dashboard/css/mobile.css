@@ -245,6 +245,82 @@ html[data-mode="mobile"] [hidden] { display: none !important; }
   text-transform: capitalize;
 }
 
+/* ── ML Retrain stats (collapsible) ── */
+.m-ml-details { padding: 4px 16px 10px; }
+.m-ml-details[open] { padding-bottom: 14px; }
+
+.m-ml-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  cursor: pointer;
+  padding: 8px 10px;
+  border: 1px solid var(--m-border);
+  background: rgba(167, 139, 250, 0.04);
+  list-style: none;
+  user-select: none;
+}
+.m-ml-summary::-webkit-details-marker { display: none; }
+.m-ml-summary::before {
+  content: '▸';
+  color: var(--m-muted);
+  font-size: 9px;
+  margin-right: 6px;
+  transition: transform 0.15s;
+}
+.m-ml-details[open] .m-ml-summary::before {
+  transform: rotate(90deg);
+  display: inline-block;
+}
+
+.m-ml-summary-label {
+  font-family: var(--m-mono);
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  color: #c4b5fd;
+  text-transform: uppercase;
+  flex: 1;
+}
+.m-ml-summary-label > span { color: var(--m-fg); }
+
+.m-ml-when {
+  font-family: var(--m-mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--m-muted);
+  text-transform: uppercase;
+}
+
+.m-ml-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 6px;
+  border: 1px solid var(--m-border);
+  border-top: none;
+}
+.m-ml-stat {
+  padding: 10px 12px;
+  border-top: 1px solid var(--m-border);
+  border-left: 1px solid var(--m-border);
+  min-width: 0;
+}
+.m-ml-stat:nth-child(odd) { border-left: none; }
+.m-ml-stat:nth-child(1),
+.m-ml-stat:nth-child(2) { border-top: none; }
+
+.m-ml-sub {
+  font-family: var(--m-mono);
+  font-size: 9px;
+  color: var(--m-muted);
+  margin-top: 3px;
+  letter-spacing: 0.8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.m-ml-sub.good { color: #4ade80; }
+.m-ml-sub.bad  { color: #f87171; }
+
 /* ── Timeline ── */
 .m-timeline { padding: 0 16px 4px; }
 .m-tl-row {

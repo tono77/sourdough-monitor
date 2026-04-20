@@ -272,3 +272,57 @@ function escapeHtml(s) {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[c]));
 }
+
+function fmtDuration(seconds) {
+  if (typeof seconds !== 'number' || !isFinite(seconds) || seconds < 0) return '—';
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  const m = Math.floor(seconds / 60);
+  const s = Math.round(seconds - m * 60);
+  return s ? `${m}m${s}s` : `${m}m`;
+}
+
+function fmtRelative(iso) {
+  if (!iso) return '—';
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return '—';
+  const diff = (Date.now() - t) / 1000;
+  if (diff < 60) return 'AHORA';
+  if (diff < 3600) return `${Math.floor(diff / 60)}MIN`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}H`;
+  return `${Math.floor(diff / 86400)}D`;
+}
+
+export function renderMlStats(d) {
+  const details = document.getElementById('mMlDetails');
+  if (!details) return;
+  if (!d || typeof d.mae !== 'number') { details.hidden = true; return; }
+  details.hidden = false;
+
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+  set('mMlSummaryMae', `${d.mae.toFixed(2)}%`);
+  set('mMlSummaryWhen', fmtRelative(d.finished_at));
+  set('mMlStatMae', `${d.mae.toFixed(2)}%`);
+  set('mMlStatValMae', typeof d.best_val_mae === 'number' ? `${d.best_val_mae.toFixed(2)}%` : '—');
+  set('mMlStatSamples', d.total_samples != null ? String(d.total_samples) : '—');
+  set('mMlStatDuration', fmtDuration(d.duration_seconds));
+  set('mMlStatLoss', typeof d.test_loss === 'number' ? `loss ${d.test_loss.toFixed(4)}` : '');
+  set('mMlStatEpoch', d.best_epoch != null ? `ep ${d.best_epoch}` : '');
+
+  const split = (d.n_train != null && d.n_val != null && d.n_test != null)
+    ? `${d.n_train}/${d.n_val}/${d.n_test}` : '';
+  set('mMlStatSplit', split);
+
+  const deltaEl = document.getElementById('mMlStatDelta');
+  if (deltaEl) {
+    if (typeof d.prev_mae === 'number') {
+      const delta = d.mae - d.prev_mae;
+      const sign = delta <= 0 ? '▼' : '▲';
+      deltaEl.className = 'm-ml-sub ' + (delta <= 0 ? 'good' : 'bad');
+      deltaEl.textContent = `${sign}${Math.abs(delta).toFixed(2)}% vs ${d.prev_mae.toFixed(2)}%`;
+    } else {
+      deltaEl.className = 'm-ml-sub';
+      deltaEl.textContent = '1er entrenamiento';
+    }
+  }
+}

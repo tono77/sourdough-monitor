@@ -188,6 +188,8 @@ def main():
 
     # Training loop
     best_val_loss = float("inf")
+    best_val_mae = float("inf")
+    best_epoch = 0
     patience_counter = 0
 
     print(f"\nTraining for up to {args.epochs} epochs (patience={args.patience})...")
@@ -201,6 +203,8 @@ def main():
         status = ""
         if val_loss < best_val_loss:
             best_val_loss = val_loss
+            best_val_mae = val_mae
+            best_epoch = epoch
             patience_counter = 0
             torch.save(model.state_dict(), MODEL_PATH)
             status = "* saved"
@@ -219,6 +223,8 @@ def main():
     print("Test set evaluation (best model):")
     model.load_state_dict(torch.load(MODEL_PATH, weights_only=True))
     test_loss, test_mae = evaluate(model, test_loader, criterion, device)
+    print(f"  Best Epoch: {best_epoch}")
+    print(f"  Best Val MAE: {best_val_mae:.2f}%")
     print(f"  Test Loss: {test_loss:.6f}")
     print(f"  Test MAE:  {test_mae:.2f}%")
     print(f"\nModel saved to: {MODEL_PATH}")

@@ -384,6 +384,81 @@ body::before {
     font-style: italic;
 }
 
+/* ML Stats Card (persistent retrain indicators) */
+.ml-stats-card {
+    margin-bottom: 20px;
+    padding: 16px 20px;
+    border: 1px solid rgba(124,58,237,0.18);
+    background: linear-gradient(135deg, rgba(124,58,237,0.05), rgba(74,222,128,0.04));
+}
+
+.ml-stats-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+}
+
+.ml-stats-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #a78bfa;
+    letter-spacing: 0.03em;
+}
+
+.ml-stats-when {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.ml-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+}
+
+.ml-stat {
+    min-width: 0;
+}
+
+.ml-stat-k {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.ml-stat-v {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+
+.ml-stat-unit {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-left: 2px;
+}
+
+.ml-stat-delta {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.ml-stat-delta-good { color: #4ade80; }
+.ml-stat-delta-bad  { color: #f87171; }
+
+@media (max-width: 720px) {
+    .ml-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* Session Selector */
 .sessions-section { margin-bottom: 20px; }
 

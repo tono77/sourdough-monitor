@@ -106,6 +106,78 @@ window.requestRetrain = async () => {
     }
 };
 
+function formatDuration(seconds) {
+    if (typeof seconds !== 'number' || !isFinite(seconds) || seconds < 0) return '—';
+    if (seconds < 60) return `${Math.round(seconds)}s`;
+    const m = Math.floor(seconds / 60);
+    const s = Math.round(seconds - m * 60);
+    return s ? `${m}m ${s}s` : `${m}m`;
+}
+
+function formatRelativeTime(iso) {
+    if (!iso) return '—';
+    const t = new Date(iso).getTime();
+    if (Number.isNaN(t)) return '—';
+    const diff = (Date.now() - t) / 1000;
+    if (diff < 60) return 'hace segundos';
+    if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`;
+    if (diff < 86400) return `hace ${Math.floor(diff / 3600)} h`;
+    const days = Math.floor(diff / 86400);
+    return days === 1 ? 'hace 1 día' : `hace ${days} días`;
+}
+
+function renderMlStatsCard(d) {
+    const card = document.getElementById('mlStatsCard');
+    if (!card) return;
+    const hasMae = typeof d?.mae === 'number';
+    if (!hasMae) { card.style.display = 'none'; return; }
+    card.style.display = '';
+
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+    setText('mlStatsWhen', formatRelativeTime(d.finished_at));
+    setText('mlStatMae', d.mae.toFixed(2));
+    setText('mlStatValMae', typeof d.best_val_mae === 'number' ? d.best_val_mae.toFixed(2) : '--');
+    setText('mlStatSamples', d.total_samples != null ? d.total_samples : '--');
+    setText('mlStatDuration', formatDuration(d.duration_seconds));
+    setText('mlStatLoss', typeof d.test_loss === 'number' ? `loss ${d.test_loss.toFixed(4)}` : '');
+    setText('mlStatEpoch', d.best_epoch != null ? `epoch ${d.best_epoch}` : '');
+
+    const split = (d.n_train != null && d.n_val != null && d.n_test != null)
+        ? `${d.n_train}/${d.n_val}/${d.n_test}` : '';
+    setText('mlStatSplit', split ? `train/val/test ${split}` : '');
+
+    const deltaEl = document.getElementById('mlStatMaeDelta');
+    if (deltaEl) {
+        if (typeof d.prev_mae === 'number') {
+            const delta = d.mae - d.prev_mae;
+            const sign = delta <= 0 ? '▼' : '▲';
+            const cls = delta <= 0 ? 'ml-stat-delta-good' : 'ml-stat-delta-bad';
+            deltaEl.className = `ml-stat-delta ${cls}`;
+            deltaEl.textContent = `${sign} ${Math.abs(delta).toFixed(2)}% vs anterior (${d.prev_mae.toFixed(2)}%)`;
+        } else {
+            deltaEl.className = 'ml-stat-delta';
+            deltaEl.textContent = 'primer entrenamiento';
+        }
+    }
+}
+
+function buildSuccessMessage(d) {
+    const parts = [];
+    if (typeof d.mae === 'number') parts.push(`MAE ${d.mae.toFixed(2)}%`);
+    if (typeof d.prev_mae === 'number' && typeof d.mae === 'number') {
+        const delta = d.mae - d.prev_mae;
+        const arrow = delta <= 0 ? '▼' : '▲';
+        parts.push(`${arrow}${Math.abs(delta).toFixed(2)}% vs ${d.prev_mae.toFixed(2)}%`);
+    }
+    if (d.total_samples != null) parts.push(`${d.total_samples} muestras`);
+    if (typeof d.duration_seconds === 'number') parts.push(formatDuration(d.duration_seconds));
+    const summary = parts.join(' · ');
+    return summary
+        ? `✅ ${summary}. Monitor reiniciándose…`
+        : '✅ Listo. Monitor reiniciándose…';
+}
+
 function subscribeRetrainState() {
     if (retrainStateUnsubscribe) retrainStateUnsubscribe();
     retrainStateUnsubscribe = onSnapshot(doc(db, 'app_config', 'retrain_state'), (snap) => {
@@ -118,11 +190,15 @@ function subscribeRetrainState() {
             banner.style.display = 'none';
             btn.disabled = false;
             btn.textContent = '🧠 Reentrenar ML';
+            renderMlStatsCard(null);
             return;
         }
         const d = snap.data();
         const state = d.state;
-        const mae = (typeof d.mae === 'number') ? d.mae.toFixed(2) + '%' : null;
+
+        // Persistent indicator card — shown whenever we have a recorded MAE,
+        // regardless of whether the transient banner is still up.
+        renderMlStatsCard(d);
 
         // Stale-success: if the retrain finished a while ago, don't keep
         // showing the "done" banner forever on fresh page loads.
@@ -147,11 +223,11 @@ function subscribeRetrainState() {
             banner.style.display = 'flex';
             banner.style.borderColor = 'rgba(74,222,128,0.4)';
             if (bTitle) bTitle.textContent = 'Modelo reentrenado';
-            bMsg.textContent = mae ? `✅ Listo (MAE ${mae}). Monitor reiniciándose…` : '✅ Listo. Monitor reiniciándose…';
+            bMsg.textContent = buildSuccessMessage(d);
             btn.disabled = false;
             btn.textContent = '🧠 Reentrenar ML';
             // Auto-hide shortly after first render of a fresh success
-            setTimeout(() => { banner.style.display = 'none'; }, 8000);
+            setTimeout(() => { banner.style.display = 'none'; }, 12000);
         } else if (state === 'error') {
             banner.style.display = 'flex';
             banner.style.borderColor = 'rgba(239,68,68,0.4)';

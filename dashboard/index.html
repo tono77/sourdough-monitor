@@ -93,6 +93,35 @@
             <div class="m-stat"><div class="m-stat-k">VEL.</div><div class="m-stat-v" id="mStatVel">—</div></div>
           </section>
 
+          <details class="m-section m-ml-details" id="mMlDetails" hidden>
+            <summary class="m-ml-summary">
+              <span class="m-ml-summary-label">🧠 MODELO ML · <span id="mMlSummaryMae">—</span></span>
+              <span class="m-ml-when" id="mMlSummaryWhen">—</span>
+            </summary>
+            <div class="m-ml-grid">
+              <div class="m-ml-stat">
+                <div class="m-stat-k">MAE TEST</div>
+                <div class="m-stat-v" id="mMlStatMae">—</div>
+                <div class="m-ml-sub" id="mMlStatDelta"></div>
+              </div>
+              <div class="m-ml-stat">
+                <div class="m-stat-k">MUESTRAS</div>
+                <div class="m-stat-v" id="mMlStatSamples">—</div>
+                <div class="m-ml-sub" id="mMlStatSplit"></div>
+              </div>
+              <div class="m-ml-stat">
+                <div class="m-stat-k">VAL MAE</div>
+                <div class="m-stat-v" id="mMlStatValMae">—</div>
+                <div class="m-ml-sub" id="mMlStatEpoch"></div>
+              </div>
+              <div class="m-ml-stat">
+                <div class="m-stat-k">DURACIÓN</div>
+                <div class="m-stat-v" id="mMlStatDuration">—</div>
+                <div class="m-ml-sub" id="mMlStatLoss"></div>
+              </div>
+            </div>
+          </details>
+
           <section class="m-section">
             <div class="m-section-head"><span>TIMELINE</span><span id="mTimelineMeta">— PENDIENTES</span></div>
             <div class="m-timeline" id="mTimeline"></div>
@@ -179,6 +208,36 @@
             <div id="notesBar" class="notes-bar" style="display:none">
                 <span class="notes-icon">💬</span>
                 <span id="notesText" class="notes-text"></span>
+            </div>
+
+            <!-- ML Model Stats (persistent) -->
+            <div id="mlStatsCard" class="card ml-stats-card" style="display:none">
+                <div class="ml-stats-header">
+                    <span class="ml-stats-title">🧠 Modelo ML</span>
+                    <span id="mlStatsWhen" class="ml-stats-when">—</span>
+                </div>
+                <div class="ml-stats-grid">
+                    <div class="ml-stat">
+                        <div class="ml-stat-k">MAE (test)</div>
+                        <div class="ml-stat-v"><span id="mlStatMae">--</span><span class="ml-stat-unit">%</span></div>
+                        <div id="mlStatMaeDelta" class="ml-stat-delta"></div>
+                    </div>
+                    <div class="ml-stat">
+                        <div class="ml-stat-k">Muestras</div>
+                        <div class="ml-stat-v"><span id="mlStatSamples">--</span></div>
+                        <div id="mlStatSplit" class="ml-stat-delta"></div>
+                    </div>
+                    <div class="ml-stat">
+                        <div class="ml-stat-k">Val MAE (best)</div>
+                        <div class="ml-stat-v"><span id="mlStatValMae">--</span><span class="ml-stat-unit">%</span></div>
+                        <div id="mlStatEpoch" class="ml-stat-delta"></div>
+                    </div>
+                    <div class="ml-stat">
+                        <div class="ml-stat-k">Duración</div>
+                        <div class="ml-stat-v"><span id="mlStatDuration">--</span></div>
+                        <div id="mlStatLoss" class="ml-stat-delta"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Retrain Status Banner -->
