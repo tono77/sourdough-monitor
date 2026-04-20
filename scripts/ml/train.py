@@ -10,7 +10,7 @@ Usage:
 
 import argparse
 import csv
-import random
+import hashlib
 from pathlib import Path
 
 import torch
@@ -81,13 +81,27 @@ def load_samples():
 
 
 def split_data(samples, val_ratio=0.15, test_ratio=0.10):
-    """Stratified random split preserving session distribution in each set."""
-    random.shuffle(samples)
-    n = len(samples)
-    test_n = max(1, int(n * test_ratio))
-    val_n = max(1, int(n * val_ratio))
-    train_n = n - test_n - val_n
-    return samples[:train_n], samples[train_n:train_n + val_n], samples[train_n + val_n:]
+    """Deterministic split: each sample's fold is fixed by hash(filename).
+
+    Reshuffling between runs would move samples across val/test, so the
+    reported MAE would shift even when the model is identical. Hashing
+    the filename pins every existing sample to the same fold forever;
+    only newly-added samples land in a new bucket (with probability
+    test_ratio + val_ratio of being evaluation data).
+    """
+    train, val, test = [], [], []
+    cutoff_test = test_ratio
+    cutoff_val = test_ratio + val_ratio
+    for s in samples:
+        h = hashlib.md5(s["filename"].encode()).hexdigest()
+        bucket = int(h[:8], 16) / 0xFFFFFFFF
+        if bucket < cutoff_test:
+            test.append(s)
+        elif bucket < cutoff_val:
+            val.append(s)
+        else:
+            train.append(s)
+    return train, val, test
 
 
 def train_epoch(model, loader, optimizer, criterion, device):
